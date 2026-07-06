@@ -22,9 +22,9 @@ do
 	end
 	local Confirmed = false;
 	WindUI:Popup({
-		Title = gradient("MM2 | BorutoDEV <3", Color3.fromHex("#eb1010"), Color3.fromHex("#1023eb")),
+		Title = gradient("Murder Mystery 2💀", Color3.fromHex("#eb1010"), Color3.fromHex("#1023eb")),
 		Icon = "rbxassetid://72462144048455",
-		Content = gradient("This script made by", Color3.fromHex("#10eb3c"), Color3.fromHex("#67c97a"))   .. gradient(" BorutoDEV", Color3.fromHex("#001e80"), Color3.fromHex("#16f2d9")) ,
+		Content = gradient("This script is made by", Color3.fromHex("#10eb3c"), Color3.fromHex("#67c97a"))   .. gradient(" BorutoDEV <3🥵", Color3.fromHex("#001e80"), Color3.fromHex("#16f2d9")) ,
 		Buttons = {
 			{
 				Title = gradient("Cancel", Color3.fromHex("#e80909"), Color3.fromHex("#630404")),
@@ -45,7 +45,7 @@ do
 		task.wait();
 	until Confirmed
 	WindUI:Notify({
-		Title = gradient("BorutoDEV <3", Color3.fromHex("#eb1010"), Color3.fromHex("#1023eb")),
+		Title = gradient("BorutoDEV <3🥵", Color3.fromHex("#eb1010"), Color3.fromHex("#1023eb")),
 		Content = "Script successfully loaded!",
 		Icon = "rbxassetid://72462144048455",
 		Duration = 3
@@ -53,7 +53,7 @@ do
 	local Window = WindUI:CreateWindow({
 		Title = gradient("BorutoDEV [SUMMER UPDATE]", Color3.fromHex("#001e80"), Color3.fromHex("#ffea00")),
 		Icon = "rbxassetid://72462144048455", 
-		Author = gradient("Murder Mystery 2", Color3.fromHex("#1bf2b2"), Color3.fromHex("#1bcbf2")),
+		Author = gradient("Murder Mystery 2🤯", Color3.fromHex("#1bf2b2"), Color3.fromHex("#1bcbf2")),
 		Folder = "WindUI",
 		Size = UDim2.fromOffset(300, 270),
 		Transparent = true,
@@ -2056,8 +2056,8 @@ end
 		end
 	});
 	Tabs.SocialsTab:Paragraph({
-		Title = gradient("BxrutoDEV", Color3.fromHex("#001e80"), Color3.fromHex("#16f2d9")),
-		Desc = "My socials",
+		Title = gradient("YouTube🥵", Color3.fromHex("#001e80"), Color3.fromHex("#16f2d9")),
+		Desc = "My socials (Hot guy🥵)",
 		Image = "bird",
 		Color = "Black",
 		Buttons = {
