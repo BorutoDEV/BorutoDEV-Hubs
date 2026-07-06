@@ -24,7 +24,7 @@ do
 	WindUI:Popup({
 		Title = gradient("Murder Mystery 2", Color3.fromHex("#eb1010"), Color3.fromHex("#1023eb")),
 		Icon = "rbxassetid://72462144048455",
-		Content = gradient("This script made by", Color3.fromHex("#10eb3c"), Color3.fromHex("#67c97a"))   .. gradient("BorutoDEV", Color3.fromHex("#001e80"), Color3.fromHex("#16f2d9")) ,
+		Content = gradient("This script made by", Color3.fromHex("#10eb3c"), Color3.fromHex("#67c97a"))   .. gradient(" BorutoDEV", Color3.fromHex("#001e80"), Color3.fromHex("#16f2d9")) ,
 		Buttons = {
 			{
 				Title = gradient("Cancel", Color3.fromHex("#e80909"), Color3.fromHex("#630404")),
@@ -51,7 +51,7 @@ do
 		Duration = 3
 	});
 	local Window = WindUI:CreateWindow({
-		Title = gradient("BorutoDEV [SUMMER UPDATE]", Color3.fromHex("#001e80"), Color3.fromHex("#ffea00")),
+		Title = gradient("Murder Mystery 2 [SUMMER UPDATE]", Color3.fromHex("#001e80"), Color3.fromHex("#ffea00")),
 		Icon = "rbxassetid://72462144048455", 
 		Author = gradient("BorutoDEV", Color3.fromHex("#1bf2b2"), Color3.fromHex("#1bcbf2")),
 		Folder = "WindUI",
@@ -63,7 +63,7 @@ do
 		HasOutline = true
 	});
 	Window:EditOpenButton({
-		Title = "Open UI",
+		Title = "Open Daddys GUI",
 		Icon = "rbxassetid://72462144048455",
 		CornerRadius = UDim.new(2, 6),
 		StrokeThickness = 2,
