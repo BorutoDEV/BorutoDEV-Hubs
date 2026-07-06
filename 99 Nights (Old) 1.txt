@@ -1,0 +1,1135 @@
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local Lighting = game:GetService("Lighting")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local LocalPlayer = Players.LocalPlayer
+
+local function performClick()
+    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+    task.wait(0.05)
+    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+end
+
+local Window = WindUI:CreateWindow({
+    Title = "Ellen Joe <3",
+    Icon = "palette",
+    Author = "BorutoDEV <3",
+    Folder = "Premium",
+    Size = UDim2.fromOffset(550, 320),
+    Theme = "Dark",
+    User = { Enabled = true, Anonymous = true, Callback = function() end },
+    SideBarWidth = 200,
+})
+
+local Tabs = {
+    About = Window:Section({ Title = "About", Opened = true }),
+    Main = Window:Section({ Title = "Main", Opened = true }),
+    Auto = Window:Section({ Title = "Auto", Opened = true }),
+    Farming = Window:Section({ Title = "Farming", Opened = true }),
+    Combat = Window:Section({ Title = "Combat", Opened = true }),
+    Bring = Window:Section({ Title = "Bring", Opened = true }),
+    Teleport = Window:Section({ Title = "Teleport", Opened = true }),
+    Esp = Window:Section({ Title = "Esp", Opened = true }),
+    Player = Window:Section({ Title = "Player", Opened = true }),
+    Misc = Window:Section({ Title = "Misc", Opened = true }),
+    Config = Window:Section({ Title = "Config", Opened = true }),
+}
+
+local TabHandles = {
+    About = Tabs.About:Tab({ Title = "Credits", Icon = "info" }),
+    Main = Tabs.Main:Tab({ Title = "Home", Icon = "home" }),
+    Auto = Tabs.Auto:Tab({ Title = "Auto", Icon = "refresh-cw" }), 
+    Farming = Tabs.Farming:Tab({ Title = "Farming", Icon = "leaf" }),
+    Combat = Tabs.Combat:Tab({ Title = "Combat", Icon = "sword" }),
+    Bring = Tabs.Bring:Tab({ Title = "Items", Icon = "arrow-down" }),
+    Teleport = Tabs.Teleport:Tab({ Title = "Teleport", Icon = "map-pin" }), 
+    Esp = Tabs.Esp:Tab({ Title = "ESP", Icon = "eye" }),
+    Player = Tabs.Player:Tab({ Title = "Player", Icon = "user" }),
+    Misc = Tabs.Misc:Tab({ Title = "Misc", Icon = "settings" }),
+    Config = Tabs.Config:Tab({ Title = "Settings", Icon = "save" }),
+}
+
+TabHandles.About:Paragraph({ Title = "Ellen Joe <3", Desc = "Kawaii!! :3" })
+TabHandles.About:Paragraph({ Title = "Credits", Desc = "BorutoDEV - Did Everything" })
+
+local itemCategories = {
+    ["Axes"] = {"Old Axe", "Good Axe", "Ice Axe", "Strong Axe", "Chainsaw"},
+    ["Sacks"] = {"Old Sack", "Good Sack", "Infernal Sack", "Giant Sack"},
+    ["Fishing Rods"] = {"Old Rod", "Good Rod", "Strong Rod"},
+    ["Flutes"] = {"Old Flute", "Good Flute", "Strong Flute"},
+    ["Flashlights"] = {"Old Flashlight", "Good Flashlight", "Strong Flashlight"},
+    ["Food"] = {"Apple", "Berry", "Carrot", "Cake", "Beans", "Soda", "Morsel", "Cooked Morsel", "Steak", "Cooked Steak", "Stew", "Mackerel", "Cooked Mackerel", "Salmon", "Cooked Salmon", "Clownfish", "Cooked Clownfish", "Char", "Cooked Char", "Eel", "Cooked Eel", "Swordfish", "Cooked Swordfish"},
+    ["Healing"] = {"Bandage", "Medkit", "First Aid Kit", "Pills"},
+    ["Fuel"] = {"Log", "Coal", "Chair", "Fuel Canister", "Oil Barrel", "Biofuel"},
+    ["Scrap"] = {"Bolt", "Sheet Metal", "Broken Fan", "Broken Microwave", "Old Radio", "Old Car Engine", "Tyre", "Washing Machine", "UFO Junk", "UFO Component"},
+    ["Pelts"] = {"Rabbit Pelt", "Wolf Pelt", "Alpha Wolf Pelt", "Bear Pelt"}
+}
+
+local categorySelections = {}
+
+local function bringItem(itemName)
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    for _, item in ipairs(workspace:GetDescendants()) do
+        if item.Name == itemName and (item:IsA("Model") or item:IsA("BasePart")) then
+            local part = item:IsA("Model") and (item.PrimaryPart or item:FindFirstChildWhichIsA("BasePart")) or item
+            if part then
+                pcall(function()
+                    part.CFrame = hrp.CFrame * CFrame.new(0, 0, -5)
+                    if item:IsA("Model") then part.Anchored = false end
+                end)
+            end
+        end
+    end
+end
+
+for categoryName, items in pairs(itemCategories) do
+    categorySelections[categoryName] = items[1]
+    TabHandles.Bring:Dropdown({ Title = "Select " .. categoryName, Values = items, Callback = function(val) categorySelections[categoryName] = val end })
+    TabHandles.Bring:Button({ Title = "Bring Selected", Callback = function() bringItem(categorySelections[categoryName]) end })
+    TabHandles.Bring:Button({ Title = "Bring ALL " .. categoryName, Callback = function()
+        for _, itemName in ipairs(items) do bringItem(itemName) task.wait(0.05) end
+    end})
+end
+
+local NoclipEnabled = false
+RunService.Heartbeat:Connect(function()
+    if NoclipEnabled and LocalPlayer.Character then
+        for _, p in pairs(LocalPlayer.Character:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide = false end end
+    end
+end)
+
+TabHandles.Player:Toggle({ Title = "Noclip (Smooth)", Value = false, Callback = function(s) NoclipEnabled = s end })
+TabHandles.Player:Toggle({ Title = "Inf Jump", Value = false, Callback = function(state)
+    if state then _G.InfJumpConn = UserInputService.JumpRequest:Connect(function() LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end)
+    else if _G.InfJumpConn then _G.InfJumpConn:Disconnect() end end
+end})
+
+-- Add any remaining logic toggles or buttons below here...
+
+local CustomSpeedSlider = TabHandles.Player:Slider({
+    Title = "Custom Speed Value",
+    Locked = false,
+    Value = { Min = 1, Max = 300, Default = 16 },
+    Callback = function(value)
+        _G.CustomSpeedValue = value
+        local player = game.Players.LocalPlayer
+        local character = player.Character
+        if character then
+            local humanoid = character:FindFirstChild("Humanoid")
+            if humanoid and CustomSpeedToggle.Value then
+                humanoid.WalkSpeed = value
+            end
+        end
+    end
+})
+
+local CustomSpeedToggle = TabHandles.Player:Toggle({
+    Title = "Custom Speed",
+    Locked = false,
+    Value = false,
+    Callback = function(state)
+        local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoid = character:WaitForChild("Humanoid")
+        if state then
+            humanoid.WalkSpeed = _G.CustomSpeedValue or 16
+        else
+            humanoid.WalkSpeed = 16
+        end
+    end
+})
+
+TabHandles.Esp:Paragraph({ Title = "Esp Player" })
+
+local EspPlayerToggle = TabHandles.Esp:Toggle({
+    Title = "Start Esp Player",
+    Locked = false,
+    Value = false,
+    Callback = function(state)
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player ~= game.Players.LocalPlayer then
+                local function applyEsp(char)
+                    local head = char:FindFirstChild("Head")
+                    if head then
+                        local billboard = head:FindFirstChild("EspBillboard")
+                        if state then
+                            if not billboard then
+                                billboard = Instance.new("BillboardGui")
+                                billboard.Name = "EspBillboard"
+                                billboard.AlwaysOnTop = true
+                                billboard.Size = UDim2.new(0, 200, 0, 50)
+                                billboard.StudsOffset = Vector3.new(0, 3, 0)
+                                billboard.MaxDistance = 0
+                                billboard.Parent = head
+                                local label = Instance.new("TextLabel")
+                                label.Name = "EspLabel"
+                                label.BackgroundTransparency = 1
+                                label.Size = UDim2.new(1, 0, 1, 0)
+                                label.TextColor3 = Color3.fromRGB(0, 255, 0)
+                                label.TextStrokeTransparency = 0
+                                label.Font = Enum.Font.SourceSansBold
+                                label.TextSize = 14
+                                label.TextScaled = false
+                                label.Text = ""
+                                label.Parent = billboard
+                            end
+                        else
+                            if billboard then
+                                billboard:Destroy()
+                            end
+                        end
+                    end
+                end
+                if player.Character then
+                    applyEsp(player.Character)
+                end
+                player.CharacterAdded:Connect(applyEsp)
+            end
+        end
+    end
+})
+
+local EspNameToggle = TabHandles.Esp:Toggle({
+    Title = "ESP Name",
+    Locked = false,
+    Value = false,
+    Callback = function(state)
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player ~= game.Players.LocalPlayer and player.Character then
+                local head = player.Character:FindFirstChild("Head")
+                if head then
+                    local billboard = head:FindFirstChild("EspBillboard")
+                    if billboard and billboard:FindFirstChild("EspLabel") then
+                        local label = billboard.EspLabel
+                        if state then
+                            if not string.find(label.Text, "Name:") then
+                                label.Text = (label.Text ~= "" and label.Text .. " | " or "") .. "Name: " .. player.Name
+                            end
+                        else
+                            label.Text = label.Text:gsub("Name: [^|]*|? ?", "")
+                        end
+                    end
+                end
+            end
+        end
+    end
+})
+
+local EspDistanceToggle = TabHandles.Esp:Toggle({
+    Title = "ESP Distance",
+    Locked = false,
+    Value = false,
+    Callback = function(state)
+        local localPlayer = game.Players.LocalPlayer
+        if not localPlayer.Character or not localPlayer.Character:FindFirstChild("HumanoidRootPart") then return end
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local head = player.Character:FindFirstChild("Head")
+                if head then
+                    local billboard = head:FindFirstChild("EspBillboard")
+                    if billboard and billboard:FindFirstChild("EspLabel") then
+                        local label = billboard.EspLabel
+                        if state then
+                            local dist = math.floor((player.Character.HumanoidRootPart.Position - localPlayer.Character.HumanoidRootPart.Position).Magnitude)
+                            if not string.find(label.Text, "Location:") then
+                                label.Text = (label.Text ~= "" and label.Text .. " | " or "") .. "Location: " .. dist
+                            end
+                        else
+                            label.Text = label.Text:gsub("Location: [^|]*|? ?", "")
+                        end
+                    end
+                end
+            end
+        end
+    end
+})
+
+local EspHealthToggle = TabHandles.Esp:Toggle({
+    Title = "ESP Health",
+    Locked = false,
+    Value = false,
+    Callback = function(state)
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player ~= game.Players.LocalPlayer and player.Character then
+                local head = player.Character:FindFirstChild("Head")
+                local humanoid = player.Character:FindFirstChild("Humanoid")
+                if head and humanoid then
+                    local billboard = head:FindFirstChild("EspBillboard")
+                    if billboard and billboard:FindFirstChild("EspLabel") then
+                        local label = billboard.EspLabel
+                        if state then
+                            if not string.find(label.Text, "Health:") then
+                                label.Text = (label.Text ~= "" and label.Text .. " | " or "") .. "Health: " .. math.floor(humanoid.Health)
+                            end
+                        else
+                            label.Text = label.Text:gsub("Health: [^|]*|? ?", "")
+                        end
+                    end
+                end
+            end
+        end
+    end
+})
+
+TabHandles.Esp:Paragraph({ Title = "Esp NPC" })
+
+local EspNpcToggle = TabHandles.Esp:Toggle({
+    Title = "Start Esp NPC",
+    Locked = false,
+    Value = false,
+    Callback = function(state)
+        for _, npc in pairs(workspace:GetChildren()) do
+            if npc:FindFirstChild("Humanoid") and npc:FindFirstChild("Head") and not game.Players:GetPlayerFromCharacter(npc) then
+                local head = npc:FindFirstChild("Head")
+                local billboard = head:FindFirstChild("EspNpcBillboard")
+                if state then
+                    if not billboard then
+                        billboard = Instance.new("BillboardGui")
+                        billboard.Name = "EspNpcBillboard"
+                        billboard.AlwaysOnTop = true
+                        billboard.Size = UDim2.new(0, 200, 0, 50)
+                        billboard.StudsOffset = Vector3.new(0, 3, 0)
+                        billboard.MaxDistance = 0
+                        billboard.Parent = head
+                        local label = Instance.new("TextLabel")
+                        label.Name = "EspNpcLabel"
+                        label.BackgroundTransparency = 1
+                        label.Size = UDim2.new(1, 0, 1, 0)
+                        label.TextColor3 = Color3.fromRGB(255, 255, 0)
+                        label.TextStrokeTransparency = 0
+                        label.Font = Enum.Font.SourceSansBold
+                        label.TextSize = 14
+                        label.TextScaled = false
+                        label.Text = ""
+                        label.Parent = billboard
+                    end
+                else
+                    if billboard then
+                        billboard:Destroy()
+                    end
+                end
+            end
+        end
+    end
+})
+
+local EspNpcNameToggle = TabHandles.Esp:Toggle({
+    Title = "ESP NPC Name",
+    Locked = false,
+    Value = false,
+    Callback = function(state)
+        for _, npc in pairs(workspace:GetChildren()) do
+            if npc:FindFirstChild("Humanoid") and npc:FindFirstChild("Head") and not game.Players:GetPlayerFromCharacter(npc) then
+                local head = npc.Head
+                local billboard = head:FindFirstChild("EspNpcBillboard")
+                if billboard and billboard:FindFirstChild("EspNpcLabel") then
+                    local label = billboard.EspNpcLabel
+                    if state then
+                        if not string.find(label.Text, "Name:") then
+                            label.Text = (label.Text ~= "" and label.Text .. " | " or "") .. "Name: " .. npc.Name
+                        end
+                    else
+                        label.Text = label.Text:gsub("Name: [^|]*|? ?", "")
+                    end
+                end
+            end
+        end
+    end
+})
+
+local EspNpcDistanceToggle = TabHandles.Esp:Toggle({
+    Title = "ESP NPC Distance",
+    Locked = false,
+    Value = false,
+    Callback = function(state)
+        local localPlayer = game.Players.LocalPlayer
+        if not localPlayer.Character or not localPlayer.Character:FindFirstChild("HumanoidRootPart") then return end
+        for _, npc in pairs(workspace:GetChildren()) do
+            if npc:FindFirstChild("HumanoidRootPart") and npc:FindFirstChild("Head") and not game.Players:GetPlayerFromCharacter(npc) then
+                local head = npc.Head
+                local billboard = head:FindFirstChild("EspNpcBillboard")
+                if billboard and billboard:FindFirstChild("EspNpcLabel") then
+                    local label = billboard.EspNpcLabel
+                    if state then
+                        local dist = math.floor((npc.HumanoidRootPart.Position - localPlayer.Character.HumanoidRootPart.Position).Magnitude)
+                        if not string.find(label.Text, "Location:") then
+                            label.Text = (label.Text ~= "" and label.Text .. " | " or "") .. "Location: " .. dist
+                        end
+                    else
+                        label.Text = label.Text:gsub("Location: [^|]*|? ?", "")
+                    end
+                end
+            end
+        end
+    end
+})
+
+local EspNpcHealthToggle = TabHandles.Esp:Toggle({
+    Title = "ESP NPC Health",
+    Locked = false,
+    Value = false,
+    Callback = function(state)
+        for _, npc in pairs(workspace:GetChildren()) do
+            if npc:FindFirstChild("Humanoid") and npc:FindFirstChild("Head") and not game.Players:GetPlayerFromCharacter(npc) then
+                local head = npc.Head
+                local humanoid = npc.Humanoid
+                local billboard = head:FindFirstChild("EspNpcBillboard")
+                if billboard and billboard:FindFirstChild("EspNpcLabel") then
+                    local label = billboard.EspNpcLabel
+                    if state then
+                        if not string.find(label.Text, "Health:") then
+                            label.Text = (label.Text ~= "" and label.Text .. " | " or "") .. "Health: " .. math.floor(humanoid.Health)
+                        end
+                    else
+                        label.Text = label.Text:gsub("Health: [^|]*|? ?", "")
+                    end
+                end
+            end
+        end
+    end
+})
+
+TabHandles.Esp:Paragraph({ Title = "Item" })
+
+local Models = {}
+for _, obj in pairs(workspace:GetChildren()) do
+    if obj:IsA("Model") and obj:FindFirstChild("PrimaryPart") then
+        table.insert(Models, obj.Name)
+    end
+end
+
+local SelectedModel = nil
+local BroughtModels = {}
+
+local Dropdown = TabHandles.Esp:Dropdown({
+    Title = "Select Item",
+    Values = Models,
+    Locked = false,
+    Value = Models[1] or "",
+    Callback = function(option)
+        SelectedModel = option
+    end
+})
+
+TabHandles.Esp:Button({
+    Title = "Bring Model",
+    Icon = "bell",
+    Callback = function()
+        if SelectedModel and not BroughtModels[SelectedModel] then
+            local model = workspace:FindFirstChild(SelectedModel)
+            local player = game.Players.LocalPlayer
+            if model and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local hrp = player.Character.HumanoidRootPart
+                model:SetPrimaryPartCFrame(hrp.CFrame * CFrame.new(0, 0, -5))
+                BroughtModels[SelectedModel] = true
+            end
+        end
+    end
+})
+
+-- Add these right after your TabHandles.Auto definition
+
+-- ===== AUTO-SCRAP =====
+local ScrapList = {"Bolt", "Tire", "Broken Fan", "Broken Microwave", "Sheet Metal"}
+local SelectedScrap = {}
+
+TabHandles.Auto:Dropdown({
+    Title = "Select Scrap",
+    Values = {"All", unpack(ScrapList)},
+    Callback = function(v)
+        SelectedScrap = (v == "All") and ScrapList or {v}
+    end
+})
+
+TabHandles.Auto:Toggle({
+    Title = "Enable Auto-Scrap",
+    Callback = function(v)
+        _G.ScrapEnabled = v
+        task.spawn(function()
+            while _G.ScrapEnabled do
+                local Scrapper = workspace:FindFirstChild("Scrapper")
+                if Scrapper then
+                    for _, obj in pairs(workspace:GetDescendants()) do
+                        if obj:IsA("Model") and table.find(SelectedScrap, obj.Name) then
+                            obj:PivotTo(Scrapper:GetPivot() * CFrame.new(0, 5, 0))
+                        end
+                    end
+                end
+                task.wait(1)
+            end
+        end)
+    end
+})
+
+-- ===== AUTO-CAMPFIRE =====
+local FuelList = {"Coal", "Log", "Oil Barrel"}
+local SelectedFuels = {}
+
+TabHandles.Auto:Dropdown({
+    Title = "Select Fuel",
+    Values = {"All", unpack(FuelList)},
+    Callback = function(v)
+        SelectedFuels = (v == "All") and FuelList or {v}
+    end
+})
+
+TabHandles.Auto:Toggle({
+    Title = "Enable Auto-Campfire",
+    Callback = function(v)
+        _G.CampEnabled = v
+        task.spawn(function()
+            while _G.CampEnabled do
+                local Fire = workspace:FindFirstChild("Campfire")
+                if Fire then
+                    for _, obj in pairs(workspace:GetDescendants()) do
+                        if obj:IsA("Model") and table.find(SelectedFuels, obj.Name) then
+                            obj:PivotTo(Fire:GetPivot() * CFrame.new(0, 3, 0))
+                        end
+                    end
+                end
+                task.wait(1)
+            end
+        end)
+    end
+})
+
+local AutoChestToggle = TabHandles.Auto:Toggle({
+    Title = "Auto Open Chest (Auto)",
+    Locked = false,
+    Value = false,
+    Callback = function(v)
+        local Players = game:GetService("Players")
+        local player = Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+        if not _G.AutoChestData then
+            _G.AutoChestData = {running = false, originalCFrame = nil}
+        end
+        local function getChests()
+            local chests = {}
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj:IsA("Model") and string.find(obj.Name, "Item Chest") then
+                    table.insert(chests, obj)
+                end
+            end
+            return chests
+        end
+        local function getPrompt(model)
+            local prompts = {}
+            for _, obj in ipairs(model:GetDescendants()) do
+                if obj:IsA("ProximityPrompt") then
+                    table.insert(prompts, obj)
+                end
+            end
+            return prompts
+        end
+        if v then
+            if _G.AutoChestData.running then return end
+            _G.AutoChestData.running = true
+            _G.AutoChestData.originalCFrame = humanoidRootPart.CFrame
+            task.spawn(function()
+                while _G.AutoChestData.running do
+                    local chests = getChests()
+                    for _, chest in ipairs(chests) do
+                        if not _G.AutoChestData.running then break end
+                        local part = chest.PrimaryPart or chest:FindFirstChildWhichIsA("BasePart")
+                        if part then
+                            humanoidRootPart.CFrame = part.CFrame + Vector3.new(0, 6, 0)
+                            local prompts = getPrompt(chest)
+                            for _, prompt in ipairs(prompts) do
+                                fireproximityprompt(prompt, math.huge)
+                            end
+                            local t = tick()
+                            while _G.AutoChestData.running and tick() - t < 4 do task.wait() end
+                        end
+                    end
+                    task.wait(0.1)
+                end
+            end)
+        else
+            _G.AutoChestData.running = false
+            if _G.AutoChestData.originalCFrame then
+                humanoidRootPart.CFrame = _G.AutoChestData.originalCFrame
+            end
+        end
+    end
+})
+
+local chestRange = 50
+local ChestRangeSlider = TabHandles.Auto:Slider({
+    Title = "Range Open Chest",
+    Locked = false,
+    Value = { Min = 1, Max = 100, Default = 50 },
+    Callback = function(val)
+        chestRange = val
+    end
+})
+
+local AutoChestNearToggle = TabHandles.Auto:Toggle({
+    Title = "Auto Open Chest (Near)",
+    Locked = false,
+    Value = false,
+    Callback = function(v)
+        local Players = game:GetService("Players")
+        local player = Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+        if not _G.AutoChestNearby then
+            _G.AutoChestNearby = {running = false}
+        end
+        local function getPromptsInRange(range)
+            local prompts = {}
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj:IsA("Model") and string.find(obj.Name, "Item Chest") then
+                    local part = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+                    if part then
+                        local dist = (humanoidRootPart.Position - part.Position).Magnitude
+                        if dist <= range then
+                            for _, p in ipairs(obj:GetDescendants()) do
+                                if p:IsA("ProximityPrompt") then
+                                    table.insert(prompts, p)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            return prompts
+        end
+        if v then
+            if _G.AutoChestNearby.running then return end
+            _G.AutoChestNearby.running = true
+            task.spawn(function()
+                while _G.AutoChestNearby.running do
+                    local prompts = getPromptsInRange(chestRange)
+                    for _, prompt in ipairs(prompts) do
+                        fireproximityprompt(prompt, math.huge)
+                    end
+                    task.wait(0.5)
+                end
+            end)
+        else
+            _G.AutoChestNearby.running = false
+        end
+    end
+})
+
+local TeleportChestButton = TabHandles.Teleport:Button({
+    Title = "Teleport To Chest",
+    Icon = "box",
+    Callback = function()
+        local Players = game:GetService("Players")
+        local player = Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+        local nearestChest, nearestDist, targetPart
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("Model") and string.find(obj.Name, "Item Chest") then
+                local part = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+                if part then
+                    local dist = (humanoidRootPart.Position - part.Position).Magnitude
+                    if not nearestDist or dist < nearestDist then
+                        nearestDist = dist
+                        nearestChest = obj
+                        targetPart = part
+                    end
+                end
+            end
+        end
+        if targetPart then
+            humanoidRootPart.CFrame = targetPart.CFrame + Vector3.new(0, targetPart.Size.Y/2 + 6, 0)
+        end
+    end
+})
+
+local AutoCampTeleportLog = TabHandles.Auto:Toggle({
+    Title = "Auto Camp (Teleport - Log)",
+    Locked = false,
+    Value = false,
+    Callback = function(v)
+        if v then
+            _G.AutoLog = true
+            local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local originalPos = hrp and hrp.CFrame
+            task.spawn(function()
+                while _G.AutoLog do
+                    task.wait()
+                    for _, m in pairs(workspace:GetDescendants()) do
+                        if not _G.AutoLog then break end
+                        if m:IsA("Model") and m.Name == "Log" and m.PrimaryPart then
+                            if hrp then
+                                hrp.CFrame = m.PrimaryPart.CFrame
+                                m:SetPrimaryPartCFrame(CFrame.new(0.5406733155250549, 12.499372482299805, -0.718663215637207))
+                                task.wait(0.2)
+                            end
+                        end
+                    end
+                end
+                if hrp and originalPos then
+                    hrp.CFrame = originalPos
+                end
+            end)
+        else
+            _G.AutoLog = false
+        end
+    end
+})
+
+local AutoCampTeleportCoal = TabHandles.Auto:Toggle({
+    Title = "Auto Camp (Teleport - Coal)",
+    Locked = false,
+    Value = false,
+    Callback = function(v)
+        if v then
+            _G.AutoCoal = true
+            local player = game.Players.LocalPlayer
+            local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+            local originalPos = hrp and hrp.CFrame
+            task.spawn(function()
+                while _G.AutoCoal do
+                    task.wait()
+                    for _, m in pairs(workspace:GetDescendants()) do
+                        if not _G.AutoCoal then break end
+                        if m:IsA("Model") and m.Name == "Coal" and m.PrimaryPart then
+                            if hrp then
+                                hrp.CFrame = m.PrimaryPart.CFrame
+                                m:SetPrimaryPartCFrame(CFrame.new(0.5406733155250549, 12.499372482299805, -0.718663215637207))
+                                task.wait(0.2)
+                            end
+                        end
+                    end
+                end
+                if hrp and originalPos then
+                    hrp.CFrame = originalPos
+                end
+            end)
+        else
+            _G.AutoCoal = false
+        end
+    end
+})
+
+local AutoCampTeleportCooked = TabHandles.Auto:Toggle({
+    Title = "Auto Cooked (Teleport)",
+    Locked = false,
+    Value = false,
+    Callback = function(v)
+        if v then
+            _G.AutoMorsel = true
+            local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local originalPos = hrp and hrp.CFrame
+            task.spawn(function()
+                while _G.AutoMorsel do
+                    task.wait()
+                    for _, m in pairs(workspace:GetDescendants()) do
+                        if not _G.AutoMorsel then break end
+                        if m:IsA("Model") and m.Name == "Morsel" and m.PrimaryPart then
+                            if hrp then
+                                hrp.CFrame = m.PrimaryPart.CFrame
+                                m:SetPrimaryPartCFrame(CFrame.new(0.5406733155250549, 12.499372482299805, -0.718663215637207))
+                                task.wait(0.2)
+                            end
+                        end
+                    end
+                end
+                if hrp and originalPos then
+                    hrp.CFrame = originalPos
+                end
+            end)
+        else
+            _G.AutoMorsel = false
+        end
+    end
+})
+
+local AutoCampBringLogs = TabHandles.Auto:Toggle({
+    Title = "Auto Camp (Bring - Logs)",
+    Locked = false,
+    Value = false,
+    Callback = function(v)
+        if v then
+            _G.BringLogs = true
+            task.spawn(function()
+                while _G.BringLogs do
+                    task.wait()
+                    for _, m in pairs(workspace:GetDescendants()) do
+                        if not _G.BringLogs then break end
+                        if m:IsA("Model") and m.Name == "Log" and m.PrimaryPart then
+                            m:SetPrimaryPartCFrame(CFrame.new(-0.5468149185180664, 7.632332801818848, 0.11174965649843216))
+                            task.wait(0.2)
+                        end
+                    end
+                end
+            end)
+        else
+            _G.BringLogs = false
+        end
+    end
+})
+
+local AutoCampBringCooked = TabHandles.Auto:Toggle({
+    Title = "Auto Cooked (Bring)",
+    Locked = false,
+    Value = false,
+    Callback = function(v)
+        if v then
+            _G.BringMorsels = true
+            task.spawn(function()
+                while _G.BringMorsels do
+                    task.wait()
+                    for _, m in pairs(workspace:GetDescendants()) do
+                        if not _G.BringMorsels then break end
+                        if m:IsA("Model") and m.Name == "Morsel" and m.PrimaryPart then
+                            m:SetPrimaryPartCFrame(CFrame.new(-0.5468149185180664, 7.632332801818848, 0.11174965649843216))
+                            task.wait(0.2)
+                        end
+                    end
+                end
+            end)
+        else
+            _G.BringMorsels = false
+        end
+    end
+})
+
+local TeleportToCamp = TabHandles.Teleport:Button({
+    Title = "Teleport To Camp",
+    Callback = function()
+        local player = game.Players.LocalPlayer
+        local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            hrp.CFrame = CFrame.new(0.5406733155250549, 12.499372482299805, -0.718663215637207)
+        end
+    end
+})
+
+local Toggle_LogBring = TabHandles.Auto:Toggle({
+    Title = "Auto Log (Bring)",
+    Locked = false,
+    Value = false,
+    Callback = function(state)
+        if state then
+            _G.CollectLogs = true
+            task.spawn(function()
+                while _G.CollectLogs do
+                    task.wait()
+                    for _, m in pairs(workspace:GetDescendants()) do
+                        if not _G.CollectLogs then break end
+                        if m:IsA("Model") and m.Name == "Log" and m.PrimaryPart then
+                            m:SetPrimaryPartCFrame(CFrame.new(20.8234, 7.7533, -5.5350))
+                            task.wait(0.2)
+                        end
+                    end
+                end
+            end)
+        else
+            _G.CollectLogs = false
+        end
+    end
+})
+
+local Toggle_BoltBring = TabHandles.Farming:Toggle({
+    Title = "Auto Bolt (Bring)",
+    Locked = false,
+    Value = false,
+    Callback = function(state)
+        if state then
+            _G.CollectBolt = true
+            task.spawn(function()
+                while _G.CollectBolt do
+                    task.wait()
+                    for _, m in pairs(workspace:GetDescendants()) do
+                        if not _G.CollectBolt then break end
+                        if m:IsA("Model") and m.Name == "Bolt" and m.PrimaryPart then
+                            m:SetPrimaryPartCFrame(CFrame.new(20.8234, 7.7533, -5.5350))
+                            task.wait(0.2)
+                        end
+                    end
+                end
+            end)
+        else
+            _G.CollectBolt = false
+        end
+    end
+})
+
+local Toggle_LogTeleport = TabHandles.Farming:Toggle({
+    Title = "Auto Log (Teleport)",
+    Locked = false,
+    Value = false,
+    Callback = function(state)
+        if state then
+            _G.AutoLogs = true
+            local player = game.Players.LocalPlayer
+            local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+            local originalPos = hrp and hrp.CFrame
+            task.spawn(function()
+                while _G.AutoLogs do
+                    task.wait()
+                    for _, m in pairs(workspace:GetDescendants()) do
+                        if not _G.AutoLogs then break end
+                        if m:IsA("Model") and m.Name == "Log" and m.PrimaryPart then
+                            if hrp then
+                                hrp.CFrame = m.PrimaryPart.CFrame
+                                m:SetPrimaryPartCFrame(CFrame.new(20.8234, 7.7533, -5.5350))
+                                task.wait(0.2)
+                            end
+                        end
+                    end
+                end
+                if hrp and originalPos then
+                    hrp.CFrame = originalPos
+                end
+            end)
+        else
+            _G.AutoLogs = false
+        end
+    end
+})
+
+local Toggle_BoltTeleport = TabHandles.Auto:Toggle({
+    Title = "Auto Bolt (Teleport)",
+    Locked = false,
+    Value = false,
+    Callback = function(state)
+        if state then
+            _G.AutoBolts = true
+            local player = game.Players.LocalPlayer
+            local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+            local originalPos = hrp and hrp.CFrame
+            task.spawn(function()
+                while _G.AutoBolts do
+                    task.wait()
+                    for _, m in pairs(workspace:GetDescendants()) do
+                        if not _G.AutoBolts then break end
+                        if m:IsA("Model") and m.Name == "Bolt" and m.PrimaryPart then
+                            if hrp then
+                                hrp.CFrame = m.PrimaryPart.CFrame
+                                m:SetPrimaryPartCFrame(CFrame.new(20.8234, 7.7533, -5.5350))
+                                task.wait(0.2)
+                            end
+                        end
+                    end
+                end
+                if hrp and originalPos then
+                    hrp.CFrame = originalPos
+                end
+            end)
+        else
+            _G.AutoBolts = false
+        end
+    end
+})
+
+local UIS = game:GetService("UserInputService")
+local player = game.Players.LocalPlayer
+
+local ChopToggle = TabHandles.Farming:Toggle({
+    Title = "Auto Chop Tree",
+    Locked = false,
+    Value = false,
+    Callback = function(v)
+        _G.AutoChop = v
+        if v then
+            local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+            local originalPos = hrp and hrp.CFrame
+            while _G.AutoChop do
+                task.wait()
+                local trees = {}
+                for _, m in pairs(workspace:GetDescendants()) do
+                    if m:IsA("Model") and m.Name == "Small Tree" and m.PrimaryPart then
+                        table.insert(trees, m)
+                    end
+                end
+                if #trees == 0 then break end
+                for _, tree in ipairs(trees) do
+                    if not _G.AutoChop then break end
+                    if hrp and tree.PrimaryPart then
+                        hrp.CFrame = tree.PrimaryPart.CFrame + Vector3.new(0, 0, -3)
+                        UIS.InputBegan:Fire({UserInputType = Enum.UserInputType.MouseButton1}, false)
+                        task.wait(1)
+                    end
+                end
+            end
+            if hrp and originalPos then
+                hrp.CFrame = originalPos
+            end
+        else
+            _G.AutoChop = false
+        end
+    end
+})
+
+local ChopTPToggle = TabHandles.Farming:Toggle({
+    Title = "Auto Chop Tree (Teleport + Click)",
+    Locked = false,
+    Value = false,
+    Callback = function(v)
+        _G.AutoChopTP = v
+        if v then
+            local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+            local originalPos = hrp and hrp.CFrame
+            while _G.AutoChopTP do
+                task.wait(0.3)
+                local trees = {}
+                for _, tree in pairs(workspace:GetDescendants()) do
+                    if tree:IsA("Model") and tree.Name == "Small Tree" and tree.PrimaryPart then
+                        table.insert(trees, tree)
+                    end
+                end
+                for _, tree in ipairs(trees) do
+                    if not _G.AutoChopTP then break end
+                    if hrp and tree.PrimaryPart then
+                        hrp.CFrame = tree.PrimaryPart.CFrame + Vector3.new(0,0,-3)
+                        UIS.InputBegan:Fire({UserInputType=Enum.UserInputType.MouseButton1, Position=tree.PrimaryPart.Position}, false)
+                        task.wait(0.1)
+                        UIS.InputEnded:Fire({UserInputType=Enum.UserInputType.MouseButton1, Position=tree.PrimaryPart.Position}, false)
+                        task.wait(0.5)
+                    end
+                end
+            end
+            if hrp and originalPos then
+                hrp.CFrame = originalPos
+            end
+        else
+            _G.AutoChopTP = false
+        end
+    end
+})
+
+local ChopFakeToggle = TabHandles.Farming:Toggle({
+    Title = "Auto Chop Tree (Testing)",
+    Locked = false,
+    Value = false,
+    Callback = function(v)
+        _G.AutoChopFake = v
+        if v then
+            while _G.AutoChopFake do
+                task.wait(0.3)
+                for _, tree in pairs(workspace:GetDescendants()) do
+                    if not _G.AutoChopFake then break end
+                    if tree:IsA("Model") and tree.Name == "Small Tree" and tree.PrimaryPart then
+                        local fakeCFrame = tree.PrimaryPart.CFrame * CFrame.new(0,0,-3)
+                        UIS.InputBegan:Fire({UserInputType = Enum.UserInputType.MouseButton1, Position = fakeCFrame.Position}, false)
+                        task.wait(0.1)
+                        UIS.InputEnded:Fire({UserInputType = Enum.UserInputType.MouseButton1, Position = fakeCFrame.Position}, false)
+                    end
+                end
+            end
+        else
+            _G.AutoChopFake = false
+        end
+    end
+})
+
+-- ==================================================
+-- NOCLIP SYSTEM (Put this after your TabHandles)
+-- ==================================================
+local RunService = game:GetService("RunService")
+local NoclipEnabled = false
+
+-- This is the "Engine" that runs in the background
+RunService.Heartbeat:Connect(function()
+    if NoclipEnabled then
+        local character = game.Players.LocalPlayer.Character
+        if character then
+            for _, part in pairs(character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end
+end)
+
+-- This is the UI button that turns the Engine on/off
+TabHandles.Player:Toggle({
+    Title = "Noclip (Smooth)",
+    Value = false,
+    Callback = function(state)
+        NoclipEnabled = state
+        
+        -- If turned off, reset collisions
+        if not state then
+            local character = game.Players.LocalPlayer.Character
+            if character then
+                for _, part in pairs(character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = true
+                    end
+                end
+            end
+        end
+    end
+})
+-- ==================================================
+
+
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+_G.FlyUpAllTime = false
+_G.FlyUpNightOnly = false
+
+local ToggleAllTime = TabHandles.Player:Toggle({
+    Title = "Fly Up (All Time)",
+    Locked = false,
+    Value = false,
+    Callback = function(v)
+        _G.FlyUpAllTime = v
+        local character = player.Character
+        if not character then return end
+        local hrp = character:FindFirstChild("HumanoidRootPart")
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if not hrp or not humanoid then return end
+        humanoid.PlatformStand = v
+        if v then
+            task.spawn(function()
+                while _G.FlyUpAllTime do
+                    local ray = Ray.new(hrp.Position, Vector3.new(0, -1000, 0))
+                    local part, pos = workspace:FindPartOnRay(ray, hrp.Parent)
+                    local targetY = (part and pos.Y or hrp.Position.Y) + 300
+                    hrp.Velocity = Vector3.new(0, 0, 0)
+                    hrp.CFrame = CFrame.new(hrp.Position.X, targetY, hrp.Position.Z)
+                    task.wait()
+                end
+                humanoid.PlatformStand = false
+            end)
+        end
+    end
+})
+
+local ToggleNightOnly = TabHandles.Player:Toggle({
+    Title = "Fly Up (Night Only)",
+    Locked = false,
+    Value = false,
+    Callback = function(v)
+        _G.FlyUpNightOnly = v
+        local character = player.Character
+        if not character then return end
+        local hrp = character:FindFirstChild("HumanoidRootPart")
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if not hrp or not humanoid then return end
+        humanoid.PlatformStand = v
+        if v then
+            task.spawn(function()
+                while _G.FlyUpNightOnly do
+                    local currentTime = Lighting.ClockTime
+                    if currentTime >= 18 or currentTime < 6 then
+                        local ray = Ray.new(hrp.Position, Vector3.new(0, -1000, 0))
+                        local part, pos = workspace:FindPartOnRay(ray, hrp.Parent)
+                        local targetY = (part and pos.Y or hrp.Position.Y) + 300
+                        hrp.Velocity = Vector3.new(0, 0, 0)
+                        hrp.CFrame = CFrame.new(hrp.Position.X, targetY, hrp.Position.Z)
+                    end
+                    task.wait()
+                end
+                humanoid.PlatformStand = false
+            end)
+        end
+    end
+})
