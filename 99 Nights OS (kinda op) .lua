@@ -125,7 +125,7 @@ end
 local window = ui:CreateWindow({
     Title = "99 nights helper",
     Desc = "Made by BorutoDEV",
-    Icon = " rbxassetid://72462144048455", 
+    Icon = "rbxassetid://72462144048455", 
     Size = UDim2.fromOffset(600, 450),
     Theme = "Dark"
 })
