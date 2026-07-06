@@ -22,7 +22,7 @@ do
 	end
 	local Confirmed = false;
 	WindUI:Popup({
-		Title = gradient("TravHub", Color3.fromHex("#eb1010"), Color3.fromHex("#1023eb")),
+		Title = gradient("MM2 | BorutoDEV <3", Color3.fromHex("#eb1010"), Color3.fromHex("#1023eb")),
 		Icon = "rbxassetid://72462144048455",
 		Content = gradient("This script made by", Color3.fromHex("#10eb3c"), Color3.fromHex("#67c97a"))   .. gradient(" BorutoDEV", Color3.fromHex("#001e80"), Color3.fromHex("#16f2d9")) ,
 		Buttons = {
@@ -45,7 +45,7 @@ do
 		task.wait();
 	until Confirmed
 	WindUI:Notify({
-		Title = gradient("BorutoDEV", Color3.fromHex("#eb1010"), Color3.fromHex("#1023eb")),
+		Title = gradient("BorutoDEV <3", Color3.fromHex("#eb1010"), Color3.fromHex("#1023eb")),
 		Content = "Script successfully loaded!",
 		Icon = "rbxassetid://72462144048455",
 		Duration = 3
@@ -64,7 +64,7 @@ do
 	});
 	Window:EditOpenButton({
 		Title = "Open UI",
-		Icon = "monitor",
+		Icon = "rbxassetid://72462144048455",
 		CornerRadius = UDim.new(2, 6),
 		StrokeThickness = 2,
 		Color = ColorSequence.new(Color3.fromHex("1E213D"), Color3.fromHex("1F75FE")),
