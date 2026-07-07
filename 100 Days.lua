@@ -42,14 +42,13 @@ local seaFoodAndWater = {
     "Jungle Berries", "Eggs", "Stew", "Chowder", "Sushi", "Canned Beans", "Crackers", 
     "Freshwater", "Purified Water"
 }
-local seaValuables = {"Coins", "Pearls", "Level 3 Flute", "Airdrop Supplies"}
+local seaValuables = {"Coins", "Pearls", "Level 3 Flute", "Airdrop Supplies", "Chest", "Crate", "Floating Chest"}
 local seaHostiles = {"Shark", "Seagull", "Pirate"}
 local seaNPCs = {"Madeline", "Erik", "dr.Stephen"}
 
 -- Active Selection Tables
 local selectedMaterialItems = {}
 local selectedFoodItems = {}
-local selectedValuableItems = {}
 local selectedEspTargets = {}
 local selectedHostileEsp = {}
 
@@ -62,11 +61,6 @@ for _, v in ipairs(seaValuables) do table.insert(allEspItems, v) end
 -- ==========================================
 -- CORE FUNCTIONS & AUTOMATION
 -- ==========================================
-
-local function fireProximity(obj)
-    local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt", true)
-    if prompt then fireproximityprompt(prompt, 1, true) end
-end
 
 local function getClosest(targetName)
     local char = LocalPlayer.Character
@@ -85,6 +79,26 @@ local function getClosest(targetName)
         end
     end
     return closest
+end
+
+-- Safely fires all proximity prompts within a specific object 
+local function fireAllPrompts(obj)
+    for _, prompt in ipairs(obj:GetDescendants()) do
+        if prompt:IsA("ProximityPrompt") then
+            local originalLOS = prompt.RequiresLineOfSight
+            local originalDist = prompt.MaxActivationDistance
+            
+            prompt.RequiresLineOfSight = false
+            prompt.MaxActivationDistance = 99999
+            
+            fireproximityprompt(prompt, 1, true)
+            
+            task.delay(0.1, function()
+                prompt.RequiresLineOfSight = originalLOS
+                prompt.MaxActivationDistance = originalDist
+            end)
+        end
+    end
 end
 
 -- ==========================================
@@ -113,7 +127,7 @@ local Tabs = {
     AutoFarm = Window:Tab({ Title = "Auto Farm", Icon = "tractor" }),
     Base = Window:Tab({ Title = "Base Auto", Icon = "hammer" }),
     Combat = Window:Tab({ Title = "Combat", Icon = "swords" }),
-    Bring = Window:Tab({ Title = "Item Bring", Icon = "package" }),
+    Bring = Window:Tab({ Title = "Auto Collect", Icon = "package" }),
     Esp = Window:Tab({ Title = "Visuals", Icon = "eye" }),
     Player = Window:Tab({ Title = "Player", Icon = "user" })
 }
@@ -153,7 +167,6 @@ Tabs.Main:Toggle({
                 while autoEatDrink do
                     local char = LocalPlayer.Character
                     if char and char:FindFirstChild("Humanoid") then
-                        -- Simulates finding food/water in inventory and consuming it
                         local backpack = LocalPlayer.Backpack
                         for _, item in ipairs(backpack:GetChildren()) do
                             if table.find(seaFoodAndWater, item.Name) then
@@ -170,10 +183,74 @@ Tabs.Main:Toggle({
     end
 })
 
+local autoRescue = false
+Tabs.Main:Toggle({
+    Title = "Auto-Rescue Survivors", Value = false,
+    Callback = function(state)
+        autoRescue = state
+        if state then
+            task.spawn(function()
+                while autoRescue do
+                    for _, obj in ipairs(Workspace:GetDescendants()) do
+                        if table.find(seaNPCs, obj.Name) then
+                            fireAllPrompts(obj)
+                        end
+                    end
+                    task.wait(3)
+                end
+            end)
+        end
+    end
+})
+
 -- ==========================================
 -- AUTO FARM TAB
 -- ==========================================
 Tabs.AutoFarm:Section({ Title = "Resource Gathering", Icon = "anchor" })
+
+local autoScrapDedicated = false
+Tabs.AutoFarm:Toggle({
+    Title = "Auto-Scrap (Loot All Floating Scrap)", Value = false,
+    Callback = function(state)
+        autoScrapDedicated = state
+        if state then
+            task.spawn(function()
+                while autoScrapDedicated do
+                    for _, obj in ipairs(workspace:GetDescendants()) do
+                        if obj.Name == "Scraps" or obj.Name == "Metal Scrap" or obj.Name == "Scrap" then
+                            -- Floating Check
+                            local part = obj:IsA("BasePart") and obj or obj:FindFirstChildWhichIsA("BasePart")
+                            if part and not part.Anchored then
+                                fireAllPrompts(obj)
+                            end
+                        end
+                    end
+                    task.wait(1.5) 
+                end
+            end)
+        end
+    end
+})
+
+local autoChest = false
+Tabs.AutoFarm:Toggle({
+    Title = "Auto-Collect Chests & Crates", Value = false,
+    Callback = function(state)
+        autoChest = state
+        if state then
+            task.spawn(function()
+                while autoChest do
+                    for _, obj in ipairs(Workspace:GetDescendants()) do
+                        if obj.Name == "Chest" or obj.Name == "Crate" or obj.Name == "Floating Chest" or obj.Name == "Airdrop Supplies" then
+                            fireAllPrompts(obj)
+                        end
+                    end
+                    task.wait(2)
+                end
+            end)
+        end
+    end
+})
 
 local autoHarpoon = false
 Tabs.AutoFarm:Toggle({
@@ -183,14 +260,11 @@ Tabs.AutoFarm:Toggle({
         if state then
             task.spawn(function()
                 while autoHarpoon do
-                    -- Simulates auto-aiming and firing the harpoon at floating trash
                     local tool = LocalPlayer.Character:FindFirstChild("Harpoon") or LocalPlayer.Backpack:FindFirstChild("Harpoon")
                     if tool then
                         tool.Parent = LocalPlayer.Character
                         local target = getClosest("Wood") or getClosest("Plastic") or getClosest("Scraps")
-                        if target then
-                            tool:Activate()
-                        end
+                        if target then tool:Activate() end
                     end
                     task.wait(0.5)
                 end
@@ -211,8 +285,8 @@ Tabs.AutoFarm:Toggle({
                     if rod then
                         rod.Parent = LocalPlayer.Character
                         rod:Activate()
-                        task.wait(3) -- Simulate waiting for bite
-                        VirtualUser:ClickButton1(Vector2.new(0,0)) -- Auto pull
+                        task.wait(3) 
+                        VirtualUser:ClickButton1(Vector2.new(0,0)) 
                     end
                     task.wait(2)
                 end
@@ -230,9 +304,7 @@ Tabs.AutoFarm:Toggle({
             task.spawn(function()
                 while autoMine do
                     local ore = getClosest("Iron Ore") or getClosest("Titanium Ore")
-                    if ore then
-                        fireProximity(ore)
-                    end
+                    if ore then fireAllPrompts(ore) end
                     task.wait(1)
                 end
             end)
@@ -255,7 +327,7 @@ Tabs.Base:Toggle({
                 while autoPurify do
                     for _, obj in ipairs(Workspace:GetDescendants()) do
                         if obj.Name == "Small Purifier" or obj.Name == "Large Purifier" then
-                            fireProximity(obj)
+                            fireAllPrompts(obj)
                         end
                     end
                     task.wait(3)
@@ -275,7 +347,7 @@ Tabs.Base:Toggle({
                 while autoCookSmelt do
                     for _, obj in ipairs(Workspace:GetDescendants()) do
                         if obj.Name == "Bonfire" or obj.Name == "Smelter" or obj.Name == "Cooking Pots" then
-                            fireProximity(obj)
+                            fireAllPrompts(obj)
                         end
                     end
                     task.wait(3)
@@ -295,7 +367,7 @@ Tabs.Base:Toggle({
                 while autoCrab do
                     for _, obj in ipairs(Workspace:GetDescendants()) do
                         if obj.Name == "Crab Traps" then
-                            fireProximity(obj)
+                            fireAllPrompts(obj)
                         end
                     end
                     task.wait(5)
@@ -308,28 +380,46 @@ Tabs.Base:Toggle({
 -- ==========================================
 -- COMBAT TAB
 -- ==========================================
-Tabs.Combat:Section({ Title = "Anti-Hostile", Icon = "shield" })
+Tabs.Combat:Section({ Title = "Anti-Hostile Area of Effect", Icon = "shield" })
 
-local antiShark = false
+local killAura = false
+local auraRadius = 25
+
+Tabs.Combat:Slider({
+    Title = "Aura Radius (Studs)",
+    Value = { Min = 10, Max = 100, Default = 25 },
+    Callback = function(v) auraRadius = v end
+})
+
 Tabs.Combat:Toggle({
-    Title = "Auto-Kill Sharks (Aura)", Value = false,
+    Title = "Enable AoE Kill Aura", Value = false,
     Callback = function(state)
-        antiShark = state
+        killAura = state
         if state then
             task.spawn(function()
-                while antiShark do
-                    local shark = getClosest("Shark")
-                    if shark then
-                        local weapon = LocalPlayer.Character:FindFirstChildOfClass("Tool")
-                        if weapon and (weapon.Name == "Machete" or weapon.Name == "Metal Spear") then
-                            weapon:Activate()
-                            -- Teleport weapon hitbox to shark to ensure hit
-                            pcall(function()
-                                weapon.Handle.CFrame = shark.PrimaryPart.CFrame
-                            end)
+                while killAura do
+                    local char = LocalPlayer.Character
+                    if char and char:FindFirstChild("HumanoidRootPart") then
+                        local hrp = char.HumanoidRootPart
+                        local weapon = char:FindFirstChildOfClass("Tool")
+                        
+                        if weapon and weapon:FindFirstChild("Handle") then
+                            for _, obj in ipairs(Workspace:GetDescendants()) do
+                                if table.find(seaHostiles, obj.Name) and obj:FindFirstChild("HumanoidRootPart") then
+                                    local enemyHrp = obj.HumanoidRootPart
+                                    local dist = (hrp.Position - enemyHrp.Position).Magnitude
+                                    
+                                    if dist <= auraRadius then
+                                        weapon:Activate()
+                                        pcall(function()
+                                            weapon.Handle.CFrame = enemyHrp.CFrame
+                                        end)
+                                    end
+                                end
+                            end
                         end
                     end
-                    task.wait(0.2)
+                    task.wait(0.1) 
                 end
             end)
         end
@@ -339,7 +429,6 @@ Tabs.Combat:Toggle({
 Tabs.Combat:Toggle({
     Title = "God Mode / Anti-Damage", Value = false,
     Callback = function(state)
-        -- Simulates destroying damage remotes or modifying humanoid state
         task.spawn(function()
             while state and task.wait(1) do
                 local char = LocalPlayer.Character
@@ -352,38 +441,43 @@ Tabs.Combat:Toggle({
 })
 
 -- ==========================================
--- BRING TAB
+-- AUTO COLLECT TAB (FLOATING ONLY)
 -- ==========================================
-local function bringItemsToPlayer(itemNames, stopFlag)
-    local char = LocalPlayer.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-    local hrp = char.HumanoidRootPart
-    
+local function remoteCollectItems(itemNames, stopFlag)
     for _, itemName in ipairs(itemNames) do
         if stopFlag and not stopFlag() then break end
-        for _, item in ipairs(workspace:GetDescendants()) do
+        
+        for _, obj in ipairs(workspace:GetDescendants()) do
             if stopFlag and not stopFlag() then break end
-            if string.match(string.lower(item.Name), string.lower(itemName)) and (item:IsA("BasePart") or item:IsA("Model")) then
-                pcall(function()
-                    local pos = hrp.CFrame * CFrame.new(0, 0, -4)
-                    if item:IsA("Model") then
-                        if item.PrimaryPart then item:SetPrimaryPartCFrame(pos)
-                        else
-                            local bp = item:FindFirstChildWhichIsA("BasePart")
-                            if bp then bp.CFrame = pos end
-                        end
-                    else
-                        item.CFrame = pos
-                        item.Velocity = Vector3.new(0, 0, 0)
+            
+            if string.match(string.lower(obj.Name), string.lower(itemName)) then
+                -- Floating Check: Ensure it's not anchored (prevents grabbing base parts)
+                local part = obj:IsA("BasePart") and obj or obj:FindFirstChildWhichIsA("BasePart")
+                if part and not part.Anchored then
+                    local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt", true)
+                    if prompt then
+                        local originalLOS = prompt.RequiresLineOfSight
+                        local originalDist = prompt.MaxActivationDistance
+                        
+                        prompt.RequiresLineOfSight = false
+                        prompt.MaxActivationDistance = 99999
+                        
+                        fireproximityprompt(prompt, 1, true)
+                        
+                        task.delay(0.1, function()
+                            prompt.RequiresLineOfSight = originalLOS
+                            prompt.MaxActivationDistance = originalDist
+                        end)
+                        task.wait(0.05) 
                     end
-                end)
-                task.wait(0.05) 
+                end
             end
         end
     end
 end
 
-Tabs.Bring:Section({ Title = "Teleport Items to You", Icon = "download" })
+Tabs.Bring:Section({ Title = "Remote Collect (Floating Items Only)", Icon = "download" })
+
 local allMatsAndOres = {}
 for _, v in ipairs(seaMaterials) do table.insert(allMatsAndOres, v) end
 for _, v in ipairs(seaOresAndFuels) do table.insert(allMatsAndOres, v) end
@@ -400,18 +494,21 @@ Tabs.Bring:Dropdown({
     Callback = function(options) selectedFoodItems = options end 
 })
 
-local loopBring = false
+local loopCollect = false
 Tabs.Bring:Toggle({
-    Title = "Loop Bring Selected Items", Default = false,
+    Title = "Loop Collect Selected Items", Default = false,
     Callback = function(state)
-        loopBring = state
+        loopCollect = state
         if state then
             task.spawn(function()
-                while loopBring do
+                while loopCollect do
                     local combined = {}
                     for _, v in ipairs(selectedMaterialItems) do table.insert(combined, v) end
                     for _, v in ipairs(selectedFoodItems) do table.insert(combined, v) end
-                    if #combined > 0 then bringItemsToPlayer(combined, function() return loopBring end) end
+                    
+                    if #combined > 0 then 
+                        remoteCollectItems(combined, function() return loopCollect end) 
+                    end
                     task.wait(1.5)
                 end
             end)
@@ -420,9 +517,8 @@ Tabs.Bring:Toggle({
 })
 
 -- ==========================================
--- ESP & PLAYER TABS
+-- ESP TAB
 -- ==========================================
--- (Keeping these identical to your preferred setup, just properly routed)
 local espEnabled = false
 Tabs.Esp:Section({ Title = "Visuals", Icon = "eye" })
 Tabs.Esp:Dropdown({ Title = "Select ESP Targets", Values = allEspItems, Multi = true, AllowNone = true, Callback = function(options) selectedEspTargets = options end })
@@ -476,6 +572,9 @@ Tabs.Esp:Toggle({
     end
 })
 
+-- ==========================================
+-- PLAYER TAB
+-- ==========================================
 Tabs.Player:Section({ Title = "Movement", Icon = "activity" })
 local walkSpeed = 16
 Tabs.Player:Slider({ Title = "WalkSpeed", Value = { Min = 16, Max = 150, Default = 16 }, Callback = function(v) walkSpeed = v end })
