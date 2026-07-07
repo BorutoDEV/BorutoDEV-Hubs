@@ -1669,7 +1669,7 @@ _G.EspHealth = Value
 
 -----------------------------------
 Info = Tabs["Info"]
-local InviteCode = "jk6dssAE52"
+local InviteCode = "CraqPh932n"
 local DiscordAPI = "https://discord.com/api/v10/invites/" .. InviteCode .. "?with_counts=true&with_expiration=true"
 local function LoadDiscordInfo()
     local success, result = pcall(function()
