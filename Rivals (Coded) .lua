@@ -13,7 +13,6 @@ local TweenService = game:GetService("TweenService")
 local Camera = workspace.CurrentCamera
 local CoreGui = game:GetService("CoreGui")
 local VirtualInputManager = game:GetService("VirtualInputManager")
-local HttpService = game:GetService("HttpService")
 
 -- Constants
 local Player = Players.LocalPlayer
@@ -168,10 +167,10 @@ local function Notify(title, text)
     end
 end
 
-local function IsPlayerIgnored(player)
+local function IsPlayerIgnored(plr)
     if Configuration.IgnoredPlayersCheck then
         for _, name in pairs(Configuration.IgnoredPlayers) do
-            if player.Name == name or player.DisplayName == name then
+            if plr.Name == name or plr.DisplayName == name then
                 return true
             end
         end
@@ -179,10 +178,10 @@ local function IsPlayerIgnored(player)
     return false
 end
 
-local function IsPlayerTargeted(player)
+local function IsPlayerTargeted(plr)
     if Configuration.TargetPlayersCheck then
         for _, name in pairs(Configuration.TargetPlayers) do
-            if player.Name == name or player.DisplayName == name then
+            if plr.Name == name or plr.DisplayName == name then
                 return true
             end
         end
@@ -681,15 +680,33 @@ local function TriggerBotCheck()
     end
 end
 
--- Load WindUI
-local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footageshock/WindUI/main/WindUI.lua"))()
+-- Load WindUI with error handling
+local WindUI = nil
+local success, result = pcall(function()
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/Footageshock/WindUI/main/WindUI.lua"))()
+end)
+
+if success then
+    WindUI = result
+else
+    -- Fallback to alternative URL
+    success, result = pcall(function()
+        return loadstring(game:HttpGet("https://raw.githubusercontent.com/Im-Fasting/WindUI/main/WindUI.lua"))()
+    end)
+    if success then
+        WindUI = result
+    else
+        Notify("Error", "Failed to load WindUI Library!")
+        error("WindUI failed to load")
+    end
+end
 
 -- Create Window
 local Window = WindUI:CreateWindow({
-    Title = "Open Daddy's GUI🥵",
-    Icon = "rbxassetid://72462144048455",
-    Author = "By BorutoDEV",
-    Folder = "BorutoDEVHubs",
+    Title = "Open Aimbot - WindUI Edition",
+    Icon = "rbxassetid://7733965386",
+    Author = "ttwizz",
+    Folder = "OpenAimbot",
     Size = UDim2.fromOffset(580, 460),
     Transparent = true,
     Theme = "Dark",
