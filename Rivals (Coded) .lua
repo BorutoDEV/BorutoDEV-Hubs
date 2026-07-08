@@ -1,6 +1,6 @@
 --[[⊹˚₊‧───────────────‧₊˚⊹·͙⁺˚*•̩̩͙✩•̩̩͙*˚⁺‧͙⁺˚*•̩̩͙✩•̩̩͙*˚⁺‧͙⊹˚₊‧───────────────‧₊˚⊹
 
-    ✨Open Aimbot - Rayfield Edition✨
+    ✨Open Aimbot - Luna Edition✨
     Anti-Cheat Resistant | Fully Featured
 
 •───────•°•❀•°•───────•୧‿̩͙ ˖︵ꕀ ⠀𓏶 ̣̣̥⠀ ꕀ︵˖ ̩͙‿୨•───────•°•❀•°•───────•]]
@@ -111,32 +111,38 @@ if not Drawing then
     end)
 end
 
--- Load Rayfield UI
-local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Rayfield/main/source'))()
+-- Load Luna
+local Luna = loadstring(game:HttpGet("https://raw.githubusercontent.com/Nebula-Softworks/Luna-Interface-Suite/refs/heads/master/source.lua", true))()
 
 -- Create Window
-local Window = Rayfield:CreateWindow({
-    Name = "Open Aimbot - Fixed Edition",
+local Window = Luna:CreateWindow({
+    Name = "Open Aimbot",
+    Subtitle = "Fixed & Undetectable Edition",
+    LogoID = "7733965386",
+    LoadingEnabled = true,
     LoadingTitle = "Open Aimbot",
     LoadingSubtitle = "by ttwizz",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "OpenAimbot",
-        FileName = "Config"
-    },
-    Discord = {
-        Enabled = false,
+    ConfigSettings = {
+        RootFolder = nil,
+        ConfigFolder = "OpenAimbot"
     },
     KeySystem = false,
 })
 
+-- Create Home Tab
+Window:CreateHomeTab({
+    SupportedExecutors = {"Synapse X", "Krnl", "Fluxus", "Delta", "Electron", "Script-Ware"},
+    DiscordInvite = "venice",
+    Icon = 1
+})
+
 -- Functions
 local function Notify(title, text)
-    Rayfield:Notify({
+    Luna:Notification({
         Title = title,
-        Content = text,
-        Duration = 3,
-        Image = 4483362458,
+        Icon = "notifications_active",
+        ImageSource = "Material",
+        Content = text
     })
 end
 
@@ -321,13 +327,11 @@ function CreatePlayerESP(plr)
         ESPData.Name.Size = 14
         ESPData.Name.Center = true
         ESPData.Name.Outline = true
-        ESPData.Name.OutlineColor = Color3.fromRGB(0, 0, 0)
         
         ESPData.Tracer = Drawing.new("Line")
         ESPData.Tracer.Visible = false
         ESPData.Tracer.Color = Configuration.ESPColour
         ESPData.Tracer.Thickness = Configuration.ESPThickness
-        ESPData.Tracer.Transparency = Configuration.ESPOpacity
         
         ESPData.Health = Drawing.new("Text")
         ESPData.Health.Visible = false
@@ -610,403 +614,406 @@ local function TriggerBotCheck()
     end
 end
 
--- RAYFIELD UI SETUP
-local AimbotTab = Window:CreateTab("Aimbot", 4483362458)
-local BotsTab = Window:CreateTab("Bots", 4483362458)
-local ChecksTab = Window:CreateTab("Checks", 4483362458)
-local VisualsTab = Window:CreateTab("Visuals", 4483362458)
-local SettingsTab = Window:CreateTab("Settings", 4483362458)
+-- LUNA UI SETUP
+local AimbotTab = Window:CreateTab({
+    Name = "Aimbot",
+    Icon = "sports_esports",
+    ImageSource = "Material",
+    ShowTitle = true
+})
+
+local BotsTab = Window:CreateTab({
+    Name = "Bots",
+    Icon = "smart_toy",
+    ImageSource = "Material",
+    ShowTitle = true
+})
+
+local ChecksTab = Window:CreateTab({
+    Name = "Checks",
+    Icon = "check_circle",
+    ImageSource = "Material",
+    ShowTitle = true
+})
+
+local VisualsTab = Window:CreateTab({
+    Name = "Visuals",
+    Icon = "visibility",
+    ImageSource = "Material",
+    ShowTitle = true
+})
+
+local SettingsTab = Window:CreateTab({
+    Name = "Settings",
+    Icon = "settings",
+    ImageSource = "Material",
+    ShowTitle = true
+})
 
 -- AIMBOT TAB
 AimbotTab:CreateSection("Main Settings")
 
 AimbotTab:CreateToggle({
     Name = "Aimbot Enabled",
+    Description = "Enable/Disable aimbot",
     CurrentValue = Configuration.Aimbot,
-    Flag = "AimbotEnabled",
     Callback = function(Value)
         Configuration.Aimbot = Value
-    end,
-})
+    end
+}, "Aimbot")
 
 AimbotTab:CreateToggle({
     Name = "One Press Mode",
+    Description = "Toggle mode instead of hold",
     CurrentValue = Configuration.OnePressAimingMode,
-    Flag = "OnePressMode",
     Callback = function(Value)
         Configuration.OnePressAimingMode = Value
-    end,
-})
+    end
+}, "OnePressMode")
 
 AimbotTab:CreateDropdown({
     Name = "Aim Mode",
+    Description = "Camera/Mouse/Silent",
     Options = {"Camera", "Mouse", "Silent"},
-    CurrentOption = Configuration.AimMode,
-    Flag = "AimMode",
-    Callback = function(Value)
-        Configuration.AimMode = Value
-    end,
-})
+    CurrentOption = {Configuration.AimMode},
+    MultipleOptions = false,
+    Callback = function(Options)
+        Configuration.AimMode = Options[1]
+    end
+}, "AimMode")
 
 AimbotTab:CreateDropdown({
     Name = "Aim Part",
+    Description = "Where to aim",
     Options = {"Head", "HumanoidRootPart", "Torso"},
-    CurrentOption = Configuration.AimPart,
-    Flag = "AimPart",
-    Callback = function(Value)
-        Configuration.AimPart = Value
-    end,
-})
+    CurrentOption = {Configuration.AimPart},
+    MultipleOptions = false,
+    Callback = function(Options)
+        Configuration.AimPart = Options[1]
+    end
+}, "AimPart")
 
 AimbotTab:CreateToggle({
     Name = "Random Aim Part",
+    Description = "Randomize aim location",
     CurrentValue = Configuration.RandomAimPart,
-    Flag = "RandomAimPart",
     Callback = function(Value)
         Configuration.RandomAimPart = Value
-    end,
-})
+    end
+}, "RandomAimPart")
 
 AimbotTab:CreateToggle({
     Name = "Off After Kill",
+    Description = "Disable after target dies",
     CurrentValue = Configuration.OffAimbotAfterKill,
-    Flag = "OffAfterKill",
     Callback = function(Value)
         Configuration.OffAimbotAfterKill = Value
-    end,
-})
+    end
+}, "OffAfterKill")
 
 AimbotTab:CreateSlider({
     Name = "Silent Aim Chance",
     Range = {0, 100},
     Increment = 1,
-    Suffix = "%",
     CurrentValue = Configuration.SilentAimChance,
-    Flag = "SilentAimChance",
     Callback = function(Value)
         Configuration.SilentAimChance = Value
-    end,
-})
+    end
+}, "SilentAimChance")
 
-AimbotTab:CreateSection("Sensitivity")
+AimbotTab:CreateSection("Sensitivity Settings")
 
 AimbotTab:CreateToggle({
     Name = "Use Sensitivity",
     CurrentValue = Configuration.UseSensitivity,
-    Flag = "UseSensitivity",
     Callback = function(Value)
         Configuration.UseSensitivity = Value
-    end,
-})
+    end
+}, "UseSensitivity")
 
 AimbotTab:CreateSlider({
     Name = "Sensitivity",
     Range = {1, 100},
     Increment = 1,
-    Suffix = "%",
     CurrentValue = Configuration.Sensitivity,
-    Flag = "Sensitivity",
     Callback = function(Value)
         Configuration.Sensitivity = Value
-    end,
-})
+    end
+}, "Sensitivity")
 
 AimbotTab:CreateToggle({
     Name = "Use Noise",
+    Description = "Add randomization",
     CurrentValue = Configuration.UseNoise,
-    Flag = "UseNoise",
     Callback = function(Value)
         Configuration.UseNoise = Value
-    end,
-})
+    end
+}, "UseNoise")
 
 AimbotTab:CreateSlider({
     Name = "Noise Frequency",
     Range = {1, 100},
     Increment = 1,
-    Suffix = "%",
     CurrentValue = Configuration.NoiseFrequency,
-    Flag = "NoiseFrequency",
     Callback = function(Value)
         Configuration.NoiseFrequency = Value
-    end,
-})
+    end
+}, "NoiseFrequency")
 
-AimbotTab:CreateSection("Offset")
+AimbotTab:CreateSection("Offset Settings")
 
 AimbotTab:CreateToggle({
     Name = "Use Offset",
     CurrentValue = Configuration.UseOffset,
-    Flag = "UseOffset",
     Callback = function(Value)
         Configuration.UseOffset = Value
-    end,
-})
+    end
+}, "UseOffset")
 
 AimbotTab:CreateDropdown({
     Name = "Offset Type",
     Options = {"Static", "Dynamic"},
-    CurrentOption = Configuration.OffsetType,
-    Flag = "OffsetType",
-    Callback = function(Value)
-        Configuration.OffsetType = Value
-    end,
-})
+    CurrentOption = {Configuration.OffsetType},
+    MultipleOptions = false,
+    Callback = function(Options)
+        Configuration.OffsetType = Options[1]
+    end
+}, "OffsetType")
 
 AimbotTab:CreateSlider({
     Name = "Static Offset",
     Range = {1, 50},
     Increment = 1,
-    Suffix = "",
     CurrentValue = Configuration.StaticOffsetIncrement,
-    Flag = "StaticOffset",
     Callback = function(Value)
         Configuration.StaticOffsetIncrement = Value
-    end,
-})
+    end
+}, "StaticOffset")
 
 AimbotTab:CreateSlider({
     Name = "Dynamic Offset",
     Range = {1, 50},
     Increment = 1,
-    Suffix = "",
     CurrentValue = Configuration.DynamicOffsetIncrement,
-    Flag = "DynamicOffset",
     Callback = function(Value)
         Configuration.DynamicOffsetIncrement = Value
-    end,
-})
+    end
+}, "DynamicOffset")
 
 AimbotTab:CreateToggle({
     Name = "Auto Offset",
     CurrentValue = Configuration.AutoOffset,
-    Flag = "AutoOffset",
     Callback = function(Value)
         Configuration.AutoOffset = Value
-    end,
-})
+    end
+}, "AutoOffset")
 
 AimbotTab:CreateSlider({
     Name = "Max Auto Offset",
     Range = {10, 100},
     Increment = 1,
-    Suffix = "",
     CurrentValue = Configuration.MaxAutoOffset,
-    Flag = "MaxAutoOffset",
     Callback = function(Value)
         Configuration.MaxAutoOffset = Value
-    end,
-})
+    end
+}, "MaxAutoOffset")
 
 -- BOTS TAB
 BotsTab:CreateSection("Spin Bot")
 
 BotsTab:CreateToggle({
     Name = "Spin Bot",
+    Description = "Auto spin character",
     CurrentValue = Configuration.SpinBot,
-    Flag = "SpinBot",
     Callback = function(Value)
         Configuration.SpinBot = Value
-    end,
-})
+    end
+}, "SpinBot")
 
 BotsTab:CreateToggle({
     Name = "One Press Spinning",
     CurrentValue = Configuration.OnePressSpinningMode,
-    Flag = "OnePressSpinning",
     Callback = function(Value)
         Configuration.OnePressSpinningMode = Value
-    end,
-})
+    end
+}, "OnePressSpinning")
 
 BotsTab:CreateSlider({
     Name = "Spin Velocity",
     Range = {1, 100},
     Increment = 1,
-    Suffix = "",
     CurrentValue = Configuration.SpinBotVelocity,
-    Flag = "SpinVelocity",
     Callback = function(Value)
         Configuration.SpinBotVelocity = Value
-    end,
-})
+    end
+}, "SpinVelocity")
 
 BotsTab:CreateDropdown({
     Name = "Spin Part",
     Options = {"Head", "HumanoidRootPart", "Torso"},
-    CurrentOption = Configuration.SpinPart,
-    Flag = "SpinPart",
-    Callback = function(Value)
-        Configuration.SpinPart = Value
-    end,
-})
+    CurrentOption = {Configuration.SpinPart},
+    MultipleOptions = false,
+    Callback = function(Options)
+        Configuration.SpinPart = Options[1]
+    end
+}, "SpinPart")
 
 BotsTab:CreateToggle({
     Name = "Random Spin Part",
     CurrentValue = Configuration.RandomSpinPart,
-    Flag = "RandomSpinPart",
     Callback = function(Value)
         Configuration.RandomSpinPart = Value
-    end,
-})
+    end
+}, "RandomSpinPart")
 
 BotsTab:CreateSection("Trigger Bot")
 
 BotsTab:CreateToggle({
     Name = "Trigger Bot",
+    Description = "Auto shoot when aiming at target",
     CurrentValue = Configuration.TriggerBot,
-    Flag = "TriggerBot",
     Callback = function(Value)
         Configuration.TriggerBot = Value
-    end,
-})
+    end
+}, "TriggerBot")
 
 BotsTab:CreateToggle({
     Name = "One Press Triggering",
     CurrentValue = Configuration.OnePressTriggeringMode,
-    Flag = "OnePressTriggering",
     Callback = function(Value)
         Configuration.OnePressTriggeringMode = Value
-    end,
-})
+    end
+}, "OnePressTriggering")
 
 BotsTab:CreateToggle({
     Name = "Smart Trigger Bot",
+    Description = "Only shoot when looking at target",
     CurrentValue = Configuration.SmartTriggerBot,
-    Flag = "SmartTriggerBot",
     Callback = function(Value)
         Configuration.SmartTriggerBot = Value
-    end,
-})
+    end
+}, "SmartTriggerBot")
 
 BotsTab:CreateSlider({
     Name = "Trigger Chance",
     Range = {0, 100},
     Increment = 1,
-    Suffix = "%",
     CurrentValue = Configuration.TriggerBotChance,
-    Flag = "TriggerChance",
     Callback = function(Value)
         Configuration.TriggerBotChance = Value
-    end,
-})
+    end
+}, "TriggerChance")
 
 BotsTab:CreateSlider({
     Name = "Trigger Delay",
     Range = {10, 200},
     Increment = 10,
-    Suffix = "ms",
     CurrentValue = Configuration.TriggerDelay,
-    Flag = "TriggerDelay",
     Callback = function(Value)
         Configuration.TriggerDelay = Value
-    end,
-})
+    end
+}, "TriggerDelay")
 
 -- CHECKS TAB
 ChecksTab:CreateSection("Player Checks")
 
 ChecksTab:CreateToggle({
     Name = "Alive Check",
+    Description = "Ignore dead players",
     CurrentValue = Configuration.AliveCheck,
-    Flag = "AliveCheck",
     Callback = function(Value)
         Configuration.AliveCheck = Value
-    end,
-})
+    end
+}, "AliveCheck")
 
 ChecksTab:CreateToggle({
     Name = "God Check",
+    Description = "Ignore invincible players",
     CurrentValue = Configuration.GodCheck,
-    Flag = "GodCheck",
     Callback = function(Value)
         Configuration.GodCheck = Value
-    end,
-})
+    end
+}, "GodCheck")
 
 ChecksTab:CreateToggle({
     Name = "Team Check",
+    Description = "Ignore teammates",
     CurrentValue = Configuration.TeamCheck,
-    Flag = "TeamCheck",
     Callback = function(Value)
         Configuration.TeamCheck = Value
-    end,
-})
+    end
+}, "TeamCheck")
 
 ChecksTab:CreateToggle({
     Name = "Friend Check",
+    Description = "Ignore friends",
     CurrentValue = Configuration.FriendCheck,
-    Flag = "FriendCheck",
     Callback = function(Value)
         Configuration.FriendCheck = Value
-    end,
-})
+    end
+}, "FriendCheck")
 
 ChecksTab:CreateSection("Environment Checks")
 
 ChecksTab:CreateToggle({
     Name = "Wall Check",
+    Description = "Ignore players behind walls",
     CurrentValue = Configuration.WallCheck,
-    Flag = "WallCheck",
     Callback = function(Value)
         Configuration.WallCheck = Value
-    end,
-})
+    end
+}, "WallCheck")
 
-ChecksTab:CreateSection("Distance & FoV")
+ChecksTab:CreateSection("Distance Settings")
 
 ChecksTab:CreateToggle({
     Name = "FoV Check",
+    Description = "Only aim within FoV circle",
     CurrentValue = Configuration.FoVCheck,
-    Flag = "FoVCheck",
     Callback = function(Value)
         Configuration.FoVCheck = Value
-    end,
-})
+    end
+}, "FoVCheck")
 
 ChecksTab:CreateSlider({
     Name = "FoV Radius",
     Range = {10, 500},
     Increment = 10,
-    Suffix = "",
     CurrentValue = Configuration.FoVRadius,
-    Flag = "FoVRadius",
     Callback = function(Value)
         Configuration.FoVRadius = Value
         if FoVCircle then
             FoVCircle.Radius = Value
         end
-    end,
-})
+    end
+}, "FoVRadius")
 
 ChecksTab:CreateToggle({
     Name = "Magnitude Check",
+    Description = "Max distance check",
     CurrentValue = Configuration.MagnitudeCheck,
-    Flag = "MagnitudeCheck",
     Callback = function(Value)
         Configuration.MagnitudeCheck = Value
-    end,
-})
+    end
+}, "MagnitudeCheck")
 
 ChecksTab:CreateSlider({
     Name = "Trigger Magnitude",
     Range = {50, 1000},
     Increment = 50,
-    Suffix = "",
     CurrentValue = Configuration.TriggerMagnitude,
-    Flag = "TriggerMagnitude",
     Callback = function(Value)
         Configuration.TriggerMagnitude = Value
-    end,
-})
+    end
+}, "TriggerMagnitude")
 
 -- VISUALS TAB
 VisualsTab:CreateSection("FoV Circle")
 
 VisualsTab:CreateToggle({
     Name = "Show FoV",
+    Description = "Display aim FoV circle",
     CurrentValue = Configuration.FoV,
-    Flag = "ShowFoV",
     Callback = function(Value)
         Configuration.FoV = Value
         ShowingFoV = Value
@@ -1015,48 +1022,43 @@ VisualsTab:CreateToggle({
         else
             DestroyFoVCircle()
         end
-    end,
-})
+    end
+}, "ShowFoV")
 
 VisualsTab:CreateSlider({
     Name = "FoV Thickness",
     Range = {1, 10},
     Increment = 1,
-    Suffix = "",
     CurrentValue = Configuration.FoVThickness,
-    Flag = "FoVThickness",
     Callback = function(Value)
         Configuration.FoVThickness = Value
-    end,
-})
+    end
+}, "FoVThickness")
 
 VisualsTab:CreateSlider({
     Name = "FoV Opacity",
     Range = {0, 1},
     Increment = 0.1,
-    Suffix = "",
     CurrentValue = Configuration.FoVOpacity,
-    Flag = "FoVOpacity",
     Callback = function(Value)
         Configuration.FoVOpacity = Value
-    end,
-})
+    end
+}, "FoVOpacity")
 
 VisualsTab:CreateToggle({
     Name = "FoV Filled",
     CurrentValue = Configuration.FoVFilled,
-    Flag = "FoVFilled",
     Callback = function(Value)
         Configuration.FoVFilled = Value
-    end,
-})
+    end
+}, "FoVFilled")
 
-VisualsTab:CreateSection("ESP")
+VisualsTab:CreateSection("ESP Settings")
 
 VisualsTab:CreateToggle({
     Name = "Smart ESP",
+    Description = "Enable ESP",
     CurrentValue = Configuration.SmartESP,
-    Flag = "SmartESP",
     Callback = function(Value)
         Configuration.SmartESP = Value
         ShowingESP = Value
@@ -1065,160 +1067,166 @@ VisualsTab:CreateToggle({
         else
             DestroyESP()
         end
-    end,
-})
+    end
+}, "SmartESP")
 
 VisualsTab:CreateToggle({
     Name = "ESP Box",
     CurrentValue = Configuration.ESPBox,
-    Flag = "ESPBox",
     Callback = function(Value)
         Configuration.ESPBox = Value
-    end,
-})
+    end
+}, "ESPBox")
 
 VisualsTab:CreateToggle({
     Name = "ESP Box Filled",
     CurrentValue = Configuration.ESPBoxFilled,
-    Flag = "ESPBoxFilled",
     Callback = function(Value)
         Configuration.ESPBoxFilled = Value
-    end,
-})
+    end
+}, "ESPBoxFilled")
 
 VisualsTab:CreateToggle({
     Name = "Name ESP",
     CurrentValue = Configuration.NameESP,
-    Flag = "NameESP",
     Callback = function(Value)
         Configuration.NameESP = Value
-    end,
-})
+    end
+}, "NameESP")
 
 VisualsTab:CreateToggle({
     Name = "Health ESP",
     CurrentValue = Configuration.HealthESP,
-    Flag = "HealthESP",
     Callback = function(Value)
         Configuration.HealthESP = Value
-    end,
-})
+    end
+}, "HealthESP")
 
 VisualsTab:CreateToggle({
     Name = "Magnitude ESP",
+    Description = "Show distance",
     CurrentValue = Configuration.MagnitudeESP,
-    Flag = "MagnitudeESP",
     Callback = function(Value)
         Configuration.MagnitudeESP = Value
-    end,
-})
+    end
+}, "MagnitudeESP")
 
 VisualsTab:CreateToggle({
     Name = "Tracer ESP",
+    Description = "Lines to targets",
     CurrentValue = Configuration.TracerESP,
-    Flag = "TracerESP",
     Callback = function(Value)
         Configuration.TracerESP = Value
-    end,
-})
+    end
+}, "TracerESP")
 
 VisualsTab:CreateSlider({
     Name = "ESP Thickness",
     Range = {1, 10},
     Increment = 1,
-    Suffix = "",
     CurrentValue = Configuration.ESPThickness,
-    Flag = "ESPThickness",
     Callback = function(Value)
         Configuration.ESPThickness = Value
-    end,
-})
+    end
+}, "ESPThickness")
 
 VisualsTab:CreateSlider({
     Name = "ESP Opacity",
     Range = {0, 1},
     Increment = 0.1,
-    Suffix = "",
     CurrentValue = Configuration.ESPOpacity,
-    Flag = "ESPOpacity",
     Callback = function(Value)
         Configuration.ESPOpacity = Value
-    end,
-})
+    end
+}, "ESPOpacity")
 
 VisualsTab:CreateToggle({
     Name = "Use Team Colour",
     CurrentValue = Configuration.ESPUseTeamColour,
-    Flag = "ESPUseTeamColour",
     Callback = function(Value)
         Configuration.ESPUseTeamColour = Value
-    end,
-})
+    end
+}, "ESPUseTeamColour")
 
 VisualsTab:CreateSection("Effects")
 
 VisualsTab:CreateToggle({
     Name = "Rainbow Visuals",
+    Description = "Rainbow ESP/FoV colors",
     CurrentValue = Configuration.RainbowVisuals,
-    Flag = "RainbowVisuals",
     Callback = function(Value)
         Configuration.RainbowVisuals = Value
-    end,
-})
+    end
+}, "RainbowVisuals")
 
 VisualsTab:CreateSlider({
     Name = "Rainbow Delay",
     Range = {1, 20},
     Increment = 1,
-    Suffix = "",
     CurrentValue = Configuration.RainbowDelay,
-    Flag = "RainbowDelay",
     Callback = function(Value)
         Configuration.RainbowDelay = Value
-    end,
-})
+    end
+}, "RainbowDelay")
 
 -- SETTINGS TAB
 SettingsTab:CreateSection("Anti-Detection")
 
 SettingsTab:CreateToggle({
     Name = "Humanization",
+    Description = "Add human-like behavior",
     CurrentValue = Configuration.Humanization,
-    Flag = "Humanization",
     Callback = function(Value)
         Configuration.Humanization = Value
-    end,
-})
+    end
+}, "Humanization")
 
 SettingsTab:CreateToggle({
     Name = "Randomization",
+    Description = "Randomize aim patterns",
     CurrentValue = Configuration.Randomization,
-    Flag = "Randomization",
     Callback = function(Value)
         Configuration.Randomization = Value
-    end,
-})
+    end
+}, "Randomization")
 
 SettingsTab:CreateToggle({
     Name = "Smooth Aim",
+    Description = "Smooth camera movement",
     CurrentValue = Configuration.SmoothAim,
-    Flag = "SmoothAim",
     Callback = function(Value)
         Configuration.SmoothAim = Value
-    end,
-})
+    end
+}, "SmoothAim")
 
 SettingsTab:CreateSlider({
     Name = "Smooth Factor",
     Range = {5, 50},
     Increment = 1,
-    Suffix = "",
     CurrentValue = Configuration.SmoothFactor * 100,
-    Flag = "SmoothFactor",
     Callback = function(Value)
         Configuration.SmoothFactor = Value / 100
-    end,
+    end
+}, "SmoothFactor")
+
+-- Theme and Config Tabs
+local ThemeTab = Window:CreateTab({
+    Name = "Theme",
+    Icon = "palette",
+    ImageSource = "Material",
+    ShowTitle = true
 })
+
+ThemeTab:BuildThemeSection()
+
+local ConfigTab = Window:CreateTab({
+    Name = "Config",
+    Icon = "save",
+    ImageSource = "Material",
+    ShowTitle = true
+})
+
+ConfigTab:BuildConfigSection()
 
 -- Input Handling
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -1379,5 +1387,5 @@ Players.PlayerRemoving:Connect(function(plr)
 end)
 
 -- Initialize
-Notify("Open Aimbot", "Rayfield Edition Loaded Successfully!")
-print("✨ Open Aimbot Rayfield Edition Loaded! ✨")
+Notify("Open Aimbot", "Luna Edition Loaded Successfully!")
+print("✨ Open Aimbot Luna Edition Loaded! ✨")
