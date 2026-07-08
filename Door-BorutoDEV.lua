@@ -135,7 +135,7 @@ if not getgenv().TransparencyEnabled then
 end
 
 local Window = ui:CreateWindow({
-    Title = "BorutoDEV | Doors",
+    Title = "Open Daddy's GUI🥵",
     Icon = "rbxassetid://72462144048455", 
     Author = "By BorutoDEV",
     Folder = " BorutoDEVHubs",
@@ -207,14 +207,14 @@ end)
 pcall(function()
     Window:Tag({
         Title = "BorutoDEV",
-        Color = Color3.fromHex("#0066ff") 
+        Color = Color3.fromHex("#1b367a") 
     })
 end)
 
 pcall(function()
     Window:Tag({
         Title = "Ellen Joe <3",
-        Color = Color3.fromHex("#30ff6a")
+        Color = Color3.fromHex("#7a1b1b")
     })
 end)
 
