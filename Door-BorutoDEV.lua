@@ -35,10 +35,13 @@ local isHotel = floor.Value == "Hotel"
 local isBackdoor = floor.Value == "Backdoor"
 local isGarden = floor.Value == "Garden"
 
+-- [FIXED] Added nil checks to prevent the script from crashing when ESP objects despawn
 function Distance(pos)
-	if game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+    if not pos then return 9999 end
+	if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
 		return (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - pos).Magnitude
 	end
+    return 9999
 end
 
 _G.GetOldBright = {
@@ -1215,7 +1218,7 @@ if v:FindFirstChild("Esp_Gui") and v["Esp_Gui"]:FindFirstChild("TextLabel") then
     v["Esp_Gui"]:FindFirstChild("TextLabel").TextColor3 = _G.EspGuiTextColor or Color3.new(255, 255, 255)
 end
 if _G.EspGui == true and v:FindFirstChild("Esp_Gui") == nil then
-	GuiEsp = Instance.new("BillboardGui", v)
+	GuiEsp = Instance.new("BillboardGui", v.Parent)
 	GuiEsp.Adornee = v.Parent
 	GuiEsp.Name = "Esp_Gui"
 	GuiEsp.Size = UDim2.new(0, 100, 0, 150)
@@ -1667,13 +1670,28 @@ _G.EspHealth = Value
     end
 })
 
+-- [FIXED] Updated to use executor HTTP requests and put the process in task.spawn to stop UI halting
 -----------------------------------
 Info = Tabs["Info"]
 local InviteCode = "CraqPh932n"
 local DiscordAPI = "https://discord.com/api/v10/invites/" .. InviteCode .. "?with_counts=true&with_expiration=true"
+
 local function LoadDiscordInfo()
+    local httpRequest = (request or http and http.request or http_request)
+    
+    if not httpRequest then
+        Info:Paragraph({
+            Title = "Error fetching Discord Info",
+            Desc = "Your executor does not support HTTP requests.",
+            Image = "triangle-alert",
+            ImageSize = 26,
+            Color = "Red",
+        })
+        return
+    end
+
     local success, result = pcall(function()
-        return game:GetService("HttpService"):JSONDecode(ui.Creator.Request({
+        return game:GetService("HttpService"):JSONDecode(httpRequest({
             Url = DiscordAPI,
             Method = "GET",
             Headers = {
@@ -1696,7 +1714,7 @@ local function LoadDiscordInfo()
             Title = "Update Info",
             Callback = function()
                 local updated, updatedResult = pcall(function()
-                    return game:GetService("HttpService"):JSONDecode(ui.Creator.Request({
+                    return game:GetService("HttpService"):JSONDecode(httpRequest({
                         Url = DiscordAPI,
                         Method = "GET",
                     }).Body)
@@ -1720,7 +1738,7 @@ local function LoadDiscordInfo()
     else
         Info:Paragraph({
             Title = "Error fetching Discord Info",
-            Desc = game:GetService("HttpService"):JSONEncode(result),
+            Desc = "Failed to load Discord API.",
             Image = "triangle-alert",
             ImageSize = 26,
             Color = "Red",
@@ -1728,7 +1746,7 @@ local function LoadDiscordInfo()
     end
 end
 
-LoadDiscordInfo()
+task.spawn(LoadDiscordInfo)
 
 Info:Divider()
 Info:Section({ 
