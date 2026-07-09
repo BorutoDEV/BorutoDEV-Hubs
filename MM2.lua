@@ -63,7 +63,7 @@ do
 		HasOutline = true
 	});
 	Window:EditOpenButton({
-		Title = "Open Daddys GUI",
+		Title = "Open Daddy's GUI🥵",
 		Icon = "rbxassetid://72462144048455",
 		CornerRadius = UDim.new(2, 6),
 		StrokeThickness = 2,
