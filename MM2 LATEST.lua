@@ -7,6 +7,21 @@ do
 	local CurrentCamera = Workspace.CurrentCamera;
 	local LocalPlayer = Players.LocalPlayer;
 	local CoreGui = game:GetService("CoreGui");
+	
+	-- ==========================================
+	-- CONNECTION TRACKING FOR TOGGLE SYSTEM
+	-- ==========================================
+	local ActiveConnections = {
+		RenderStepped = {},
+		Stepped = nil,
+		Heartbeat = nil,
+		PlayerRemoving = nil,
+		ChildAdded = {},
+		OnTeleport = nil
+	}
+	local ScriptEnabled = true
+	local GUIVisible = true
+	
 	function gradient(text, startColor, endColor)
 		local result = "";
 		local length = #text;
@@ -394,11 +409,12 @@ do
 		for _, mapName in pairs(mapPaths) do
 			local map = workspace:FindFirstChild(mapName);
 			if map then
-				map.ChildAdded:Connect(function(child)
+				local conn = map.ChildAdded:Connect(function(child)
 					if (child.Name == "GunDrop") then
 						createGunDropHighlight(child);
 					end
 				end);
+				table.insert(ActiveConnections.ChildAdded, conn);
 			end
 		end
 	end
@@ -411,23 +427,26 @@ do
 			updateGunDropESP();
 		end
 	});
-	workspace.ChildAdded:Connect(function(child)
+	local workspaceChildConn = workspace.ChildAdded:Connect(function(child)
 		if table.find(mapPaths, child.Name) then
 			task.wait(2);
 			updateGunDropESP();
 		end
 	end);
-	RunService.RenderStepped:Connect(function()
+	table.insert(ActiveConnections.ChildAdded, workspaceChildConn);
+	local espRenderConn = RunService.RenderStepped:Connect(function()
 		UpdateRoles();
 		if (ESPConfig.HighlightMurderer or ESPConfig.HighlightInnocent or ESPConfig.HighlightSheriff) then
 			UpdateHighlights();
 		end
 	end);
-	Players.PlayerRemoving:Connect(function(player)
+	table.insert(ActiveConnections.RenderStepped, espRenderConn);
+	local playerRemoveConn = Players.PlayerRemoving:Connect(function(player)
 		if (player == LP) then
 			RemoveAllHighlights();
 		end
 	end);
+	ActiveConnections.PlayerRemoving = playerRemoveConn;
 	Tabs.TeleportTab:Section({
 		Title = gradient("Default TP", Color3.fromHex("#00448c"), Color3.fromHex("#0affd6"))
 	});
@@ -459,17 +478,19 @@ do
 		});
 	end
 	initializeTeleportDropdown();
-	Players.PlayerAdded:Connect(function(player)
+	local playerAddedConn = Players.PlayerAdded:Connect(function(player)
 		task.wait(1);
 		if teleportDropdown then
 			teleportDropdown:Refresh(updateTeleportPlayers());
 		end
 	end);
-	Players.PlayerRemoving:Connect(function(player)
+	table.insert(ActiveConnections.ChildAdded, playerAddedConn);
+	local playerRemoveConn2 = Players.PlayerRemoving:Connect(function(player)
 		if teleportDropdown then
 			teleportDropdown:Refresh(updateTeleportPlayers());
 		end
 	end);
+	table.insert(ActiveConnections.ChildAdded, playerRemoveConn2);
 	local function teleportToPlayer()
 		if (teleportTarget and teleportTarget.Character) then
 			local targetRoot = teleportTarget.Character:FindFirstChild("HumanoidRootPart");
@@ -751,6 +772,7 @@ do
 	end
 	coroutine.wrap(AutoUpdate)();
 	cameraConnection = RunService.RenderStepped:Connect(Update);
+	table.insert(ActiveConnections.RenderStepped, cameraConnection);
 	LocalPlayer.AncestryChanged:Connect(function()
 		if ( not LocalPlayer.Parent and cameraConnection) then
 			cameraConnection:Disconnect();
@@ -978,6 +1000,7 @@ do
 			else
 				if AutoFarm.Connection then
 					task.cancel(AutoFarm.Connection);
+					AutoFarm.Connection = nil;
 				end
 				WindUI:Notify({
 					Title = "AutoFarm",
@@ -1007,6 +1030,7 @@ end
 			else
 				if AutoFarm.Connection then
 					task.cancel(AutoFarm.Connection);
+					AutoFarm.Connection = nil;
 				end
 				WindUI:Notify({
 					Title = "AutoFarm",
@@ -1280,12 +1304,13 @@ end
 				if map:FindFirstChild("GunDrop") then
 					checkForGunDrops();
 				end
-				map.ChildAdded:Connect(function(child)
+				local conn = map.ChildAdded:Connect(function(child)
 					if (child.Name == "GunDrop") then
 						task.wait(0.5);
 						checkForGunDrops();
 					end
 				end);
+				table.insert(ActiveConnections.ChildAdded, conn);
 			end
 		end
 	end
@@ -1293,22 +1318,24 @@ end
 		for _, mapName in ipairs(mapGunDrops) do
 			local map = workspace:FindFirstChild(mapName);
 			if map then
-				map.ChildRemoved:Connect(function(child)
+				local conn = map.ChildRemoved:Connect(function(child)
 					if ((child.Name == "GunDrop") and notifiedGunDrops[child]) then
 						notifiedGunDrops[child] = nil;
 					end
 				end);
+				table.insert(ActiveConnections.ChildAdded, conn);
 			end
 		end
 	end
 	setupGunDropMonitoring();
 	setupGunDropRemovalTracking();
-	workspace.ChildAdded:Connect(function(child)
+	local wsChildConn = workspace.ChildAdded:Connect(function(child)
 		if table.find(mapGunDrops, child.Name) then
 			task.wait(2);
 			checkForGunDrops();
 		end
 	end);
+	table.insert(ActiveConnections.ChildAdded, wsChildConn);
 	Tabs.InnocentTab:Toggle({
 		Title = "Notify GunDrop",
 		Default = true,
@@ -1934,7 +1961,8 @@ end
 		Callback = function(state)
 			Settings.Hitbox.Enabled = state;
 			if state then
-				RunService.Heartbeat:Connect(UpdateHitboxes);
+				local conn = RunService.Heartbeat:Connect(UpdateHitboxes);
+				table.insert(ActiveConnections.RenderStepped, conn);
 			else
 				for _, box in pairs(Settings.Hitbox.Adornments) do
 					if box then
@@ -2025,7 +2053,7 @@ end
 				end);
 			end
 		end);
-		LocalPlayer.OnTeleport:Connect(function(state)
+		ActiveConnections.OnTeleport = LocalPlayer.OnTeleport:Connect(function(state)
 			if ((state == Enum.TeleportState.Started) and AutoInject.Enabled) then
 				queue_on_teleport([[
                 wait(2)
@@ -2033,7 +2061,7 @@ end
             ]] );
 			end
 		end);
-		game:GetService("Players").PlayerRemoving:Connect(function(player)
+		local playerRemConn = game:GetService("Players").PlayerRemoving:Connect(function(player)
 			if ((player == LocalPlayer) and AutoInject.Enabled) then
 				queue_on_teleport([[
                 wait(2)
@@ -2041,6 +2069,7 @@ end
             ]] );
 			end
 		end);
+		table.insert(ActiveConnections.ChildAdded, playerRemConn);
 	end
 	Tabs.SettingsTab:Button({
 		Title = "Manual Re-Inject",
@@ -2415,4 +2444,212 @@ end
 			});
 		end
 	});
+	
+	-- ==========================================
+	-- TOGGLE SYSTEM - ADDED AT END
+	-- ==========================================
+	
+	-- Function to disconnect all connections and stop features
+	local function DisconnectAll()
+		-- Disconnect all RenderStepped connections
+		for _, conn in ipairs(ActiveConnections.RenderStepped) do
+			if conn then pcall(function() conn:Disconnect() end) end
+		end
+		ActiveConnections.RenderStepped = {}
+		
+		-- Disconnect Stepped
+		if ActiveConnections.Stepped then
+			pcall(function() ActiveConnections.Stepped:Disconnect() end)
+			ActiveConnections.Stepped = nil
+		end
+		
+		-- Disconnect Heartbeat
+		if ActiveConnections.Heartbeat then
+			pcall(function() ActiveConnections.Heartbeat:Disconnect() end)
+			ActiveConnections.Heartbeat = nil
+		end
+		
+		-- Disconnect PlayerRemoving
+		if ActiveConnections.PlayerRemoving then
+			pcall(function() ActiveConnections.PlayerRemoving:Disconnect() end)
+			ActiveConnections.PlayerRemoving = nil
+		end
+		
+		-- Disconnect all ChildAdded connections
+		for _, conn in ipairs(ActiveConnections.ChildAdded) do
+			if conn then pcall(function() conn:Disconnect() end) end
+		end
+		ActiveConnections.ChildAdded = {}
+		
+		-- Disconnect OnTeleport
+		if ActiveConnections.OnTeleport then
+			pcall(function() ActiveConnections.OnTeleport:Disconnect() end)
+			ActiveConnections.OnTeleport = nil
+		end
+		
+		-- Stop Kill All
+		killActive = false
+		
+		-- Stop AutoFarm
+		AutoFarm.Enabled = false
+		if AutoFarm.Connection then
+			pcall(function() task.cancel(AutoFarm.Connection) end)
+			AutoFarm.Connection = nil
+		end
+		
+		-- Disable GunSystem
+		GunSystem.AutoGrabEnabled = false
+		
+		-- Disable Noclip
+		if Settings.Noclip.Connection then
+			pcall(function() Settings.Noclip.Connection:Disconnect() end)
+			Settings.Noclip.Connection = nil
+		end
+		Settings.Noclip.Enabled = false
+		
+		-- Disable AntiAFK
+		if Settings.AntiAFK.Connection then
+			pcall(function() Settings.AntiAFK.Connection:Disconnect() end)
+			Settings.AntiAFK.Connection = nil
+		end
+		Settings.AntiAFK.Enabled = false
+		
+		-- Disable Hitbox
+		Settings.Hitbox.Enabled = false
+		for _, box in pairs(Settings.Hitbox.Adornments) do
+			if box then box:Destroy() end
+		end
+		Settings.Hitbox.Adornments = {}
+		
+		-- Reset Camera
+		isCameraLocked = false
+		isSpectating = false
+		CurrentCamera.CameraType = Enum.CameraType.Custom
+		
+		-- Remove Shot Button
+		if shotButtonActive then
+			pcall(RemoveShotButton)
+		end
+		
+		-- Clear ESP Highlights
+		RemoveAllHighlights()
+		ESPConfig.HighlightMurderer = false
+		ESPConfig.HighlightInnocent = false
+		ESPConfig.HighlightSheriff = false
+		gunDropESPEnabled = false
+		
+		-- Remove Gun Drop Highlights
+		for _, mapName in pairs(mapPaths) do
+			local map = workspace:FindFirstChild(mapName)
+			if map then
+				local gunDrop = map:FindFirstChild("GunDrop")
+				if gunDrop and gunDrop:FindFirstChild("GunDropHighlight") then
+					gunDrop.GunDropHighlight:Destroy()
+				end
+			end
+		end
+		
+		-- Reset Character
+		CharacterSettings.WalkSpeed.Value = CharacterSettings.WalkSpeed.Default
+		CharacterSettings.JumpPower.Value = CharacterSettings.JumpPower.Default
+		updateCharacter()
+	end
+
+	-- Function to hide/show GUI
+	local function ToggleGUI()
+		GUIVisible = not GUIVisible
+		if GUIVisible then
+			pcall(function() Window:Show() end)
+			WindUI:Notify({
+				Title = "Script Enabled",
+				Content = "GUI is now visible",
+				Duration = 2,
+				Icon = "check-circle"
+			})
+		else
+			pcall(function() Window:Hide() end)
+			WindUI:Notify({
+				Title = "Script Disabled",
+				Content = "GUI hidden - features still running",
+				Duration = 2,
+				Icon = "eye-off"
+			})
+		end
+	end
+
+	-- Function to completely disable everything (KILL SWITCH)
+	local function KillScript()
+		ScriptEnabled = false
+		DisconnectAll()
+		pcall(function() Window:Hide() end)
+		WindUI:Notify({
+			Title = "SCRIPT DISABLED",
+			Content = "All features stopped and GUI hidden",
+			Duration = 3,
+			Icon = "power-off",
+			Color = "Red"
+		})
+		print("MM2 Script - Fully Disabled")
+	end
+
+	-- Function to re-enable
+	local function EnableScript()
+		ScriptEnabled = true
+		GUIVisible = true
+		pcall(function() Window:Show() end)
+		WindUI:Notify({
+			Title = "Script Enabled",
+			Content = "GUI restored. Re-enable features manually.",
+			Duration = 3,
+			Icon = "power",
+			Color = "Green"
+		})
+	end
+
+	-- Master toggle function
+	getgenv().ToggleMM2Script = function()
+		if ScriptEnabled then
+			KillScript()
+		else
+			EnableScript()
+		end
+		return ScriptEnabled
+	end
+
+	-- Keybind to toggle
+	game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
+		if gameProcessed then return end
+		
+		-- Right Control = Toggle GUI visibility
+		if input.KeyCode == Enum.KeyCode.RightControl then
+			ToggleGUI()
+		end
+		
+		-- Delete = Full kill switch
+		if input.KeyCode == Enum.KeyCode.Delete then
+			KillScript()
+		end
+		
+		-- Insert = Re-enable
+		if input.KeyCode == Enum.KeyCode.Insert then
+			EnableScript()
+		end
+	end)
+
+	-- Add buttons to Settings tab
+	Tabs.SettingsTab:Section({Title = "Script Control"})
+	Tabs.SettingsTab:Button({
+		Title = "Hide GUI (RightCtrl)",
+		Callback = ToggleGUI
+	})
+	Tabs.SettingsTab:Button({
+		Title = "Kill All Features (Del)",
+		Callback = KillScript
+	})
+	Tabs.SettingsTab:Button({
+		Title = "Restore GUI (Ins)",
+		Callback = EnableScript
+	})
+
+	print("MM2 Script Loaded - Press RightCtrl to toggle GUI, Delete to kill, Insert to restore")
 end
