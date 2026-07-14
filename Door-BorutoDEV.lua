@@ -329,6 +329,72 @@ end
     end
 })
 
+Main:Toggle({
+ Title = "Anti Lag",
+ Type = "Toggle",
+ Default = false, 
+ Callback = function(Value)
+  _G.AntiLag = Value
+  local Lighting = game:GetService("Lighting")
+  
+  if Value then
+   -- OPTIMIZED: Use a task.spawn so the UI doesn't freeze
+   task.spawn(function()
+    print("Anti-Lag: Enabling...")
+    local modifiedObjects = {}
+    local count = 0
+    
+    -- 1. Disable Visual Effects (Lighting)
+    for i, v in pairs(Lighting:GetChildren()) do
+     if v:IsA("BloomEffect") or v:IsA("BlurEffect") or v:IsA("DepthOfFieldEffect") or v:IsA("SunRaysEffect") then
+      v.Enabled = false
+      table.insert(modifiedObjects, v)
+     end
+    end
+    
+    -- 2. Disable Particles and Textures
+    for _, v in pairs(workspace:GetDescendants()) do
+     if v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Sparkles") then
+      v.Enabled = false
+      table.insert(modifiedObjects, v)
+      count = count + 1
+     elseif v:IsA("Decal") or v:IsA("Texture") then
+      v.Texture = ""
+      table.insert(modifiedObjects, v)
+      count = count + 1
+     end
+    end
+    
+    -- 3. Optimize Lighting Properties
+    Lighting.FogEnd = math.huge
+    Lighting.FogStart = math.huge
+    Lighting.Brightness = 3
+    Lighting.GlobalShadows = false
+    
+    game:GetService("TestService"):Message("Anti-Lag: Disabled "..count.." assets.")
+   end)
+   
+  else
+   -- RESTORE DEFAULTS
+   print("Anti-Lag: Disabling...")
+   -- Note: Fully restoring individual textures is hard without saving them, 
+   -- so we reset the global performance settings which helps the most.
+   Lighting.FogEnd = 1000
+   Lighting.FogStart = 0
+   Lighting.Brightness = 1
+   Lighting.GlobalShadows = true
+   
+   -- Re-enable visual effects
+   for _, v in pairs(Lighting:GetChildren()) do
+    if v:IsA("BloomEffect") or v:IsA("BlurEffect") or v:IsA("DepthOfFieldEffect") or v:IsA("SunRaysEffect") then
+     v.Enabled = true
+    end
+   end
+   print("Anti-Lag: Settings restored.")
+  end
+ end
+})
+
 Main:Section({Title = "Anti", TextXAlignment = "Left", TextSize = 17})
 
 Main:Toggle({
@@ -397,81 +463,6 @@ game.Players.LocalPlayer.Character:SetAttribute("Oxygen",100)
 end
     end
 })
-
-Main:Toggle({
-	Title = "Anti Lag"
-	Type = "Toggle"
-	Default = false, 
-local ToDisable = {
-	Textures = true,
-	VisualEffects = true,
-	Parts = true,
-	Particles = true,
-	Sky = true
-}
-
-local ToEnable = {
-	FullBright = false
-}
-
-local Stuff = {}
-
-for _, v in next, game:GetDescendants() do
-	if ToDisable.Parts then
-		if v:IsA("Part") or v:IsA("Union") or v:IsA("BasePart") then
-			v.Material = Enum.Material.SmoothPlastic
-			table.insert(Stuff, 1, v)
-		end
-	end
-	
-	if ToDisable.Particles then
-		if v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Explosion") or v:IsA("Sparkles") or v:IsA("Fire") then
-			v.Enabled = false
-			table.insert(Stuff, 1, v)
-		end
-	end
-	
-	if ToDisable.VisualEffects then
-		if v:IsA("BloomEffect") or v:IsA("BlurEffect") or v:IsA("DepthOfFieldEffect") or v:IsA("SunRaysEffect") then
-			v.Enabled = false
-			table.insert(Stuff, 1, v)
-		end
-	end
-	
-	if ToDisable.Textures then
-		if v:IsA("Decal") or v:IsA("Texture") then
-			v.Texture = ""
-			table.insert(Stuff, 1, v)
-		end
-	end
-	
-	if ToDisable.Sky then
-		if v:IsA("Sky") then
-			v.Parent = nil
-			table.insert(Stuff, 1, v)
-		end
-	end
-end
-
-game:GetService("TestService"):Message("Effects Disabler Script : Successfully disabled "..#Stuff.." assets / effects. Settings :")
-
-for i, v in next, ToDisable do
-	print(tostring(i)..": "..tostring(v))
-end
-
-if ToEnable.FullBright then
-    local Lighting = game:GetService("Lighting")
-    
-    Lighting.FogColor = Color3.fromRGB(255, 255, 255)
-    Lighting.FogEnd = math.huge
-    Lighting.FogStart = math.huge
-    Lighting.Ambient = Color3.fromRGB(255, 255, 255)
-    Lighting.Brightness = 5
-    Lighting.ColorShift_Bottom = Color3.fromRGB(255, 255, 255)
-    Lighting.ColorShift_Top = Color3.fromRGB(255, 255, 255)
-    Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
-    Lighting.Outlines = true
-end)}
 		
 local Misc = Tabs.Tab1
 local EntityGet = Misc:Dropdown({
