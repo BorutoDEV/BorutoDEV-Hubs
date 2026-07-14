@@ -35,7 +35,6 @@ local isHotel = floor.Value == "Hotel"
 local isBackdoor = floor.Value == "Backdoor"
 local isGarden = floor.Value == "Garden"
 
--- [FIXED] Added nil checks to prevent the script from crashing when ESP objects despawn
 function Distance(pos)
     if not pos then return 9999 end
 	if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -160,9 +159,9 @@ local Window = ui:CreateWindow({
             end
             
             local newTheme = themes[currentThemeIndex]
-            WindUI:SetTheme(newTheme)
+            ui:SetTheme(newTheme)
            
-            WindUI:Notify({
+            ui:Notify({
                 Title = "Theme Changed",
                 Content = "Switched to " .. newTheme .. " theme!",
                 Duration = 2,
@@ -182,7 +181,7 @@ pcall(function()
             getgenv().TransparencyEnabled = false
             pcall(function() Window:ToggleTransparency(false) end)
             
-            WindUI:Notify({
+            ui:Notify({
                 Title = "Transparency", 
                 Content = "Transparency disabled",
                 Duration = 3,
@@ -193,7 +192,7 @@ pcall(function()
             getgenv().TransparencyEnabled = true
             pcall(function() Window:ToggleTransparency(true) end)
             
-            WindUI:Notify({
+            ui:Notify({
                 Title = "Transparency",
                 Content = "Transparency enabled", 
                 Duration = 3,
@@ -447,8 +446,8 @@ Misc:Toggle({
     Type = "Toggle",
     Default = false,
     Callback = function(Value)
-_G.NotifyEntity = Value
-if _G.NotifyEntity then
+_G.AutoGetCode = Value
+if _G.AutoGetCode then
 local function Deciphercode(v)
 local Hints = game.Players.LocalPlayer.PlayerGui:WaitForChild("PermUI"):WaitForChild("Hints")
 
@@ -697,7 +696,7 @@ end
 end
 else
 function Keys(v)
-if ((v.Name:find("Key") or v.Name:find("FuseObtain")) and v:FindFirstChild("Hitbox")) or (v.Name == "LeverForGate" and v.PrimaryPart) then
+if v.Name:find("Key") or v.Name:find("FuseObtain") or v.Name == "LeverForGate" then
 if v:FindFirstChild("Esp_Highlight") then
 	v:FindFirstChild("Esp_Highlight").FillColor = _G.ColorLight or Color3.fromRGB(255, 255, 255)
 	v:FindFirstChild("Esp_Highlight").OutlineColor = _G.ColorLight or Color3.fromRGB(255, 255, 255)
@@ -717,7 +716,7 @@ end
 if v:FindFirstChild("Esp_Gui") and v["Esp_Gui"]:FindFirstChild("TextLabel") then
 	v["Esp_Gui"]:FindFirstChild("TextLabel").Text = 
 	        (_G.EspName == true and ((v.Name == "LeverForGate" and "Lever") or (v.Name:find("Key") and "Key") or (v.Name:find("FuseObtain") and "Fuse")) or "")..
-            (_G.EspDistance == true and "\nDistance ("..string.format("%.0f", Distance((v.Name == "LeverForGate" and v.PrimaryPart.Position) or ((v.Name:find("Key") or v.Name:find("FuseObtain")) and v.Hitbox.Position))).."m)" or "")
+            (_G.EspDistance == true and "\nDistance ("..string.format("%.0f", Distance(v:GetPivot().Position)).."m)" or "")
     v["Esp_Gui"]:FindFirstChild("TextLabel").TextSize = _G.EspGuiTextSize or 15
     v["Esp_Gui"]:FindFirstChild("TextLabel").TextColor3 = _G.EspGuiTextColor or Color3.new(255, 255, 255)
 end
@@ -745,7 +744,7 @@ end
 end
 end
 local function CheckKey(v)
-    if not table.find(_G.KeyAdd, v) and ((v.Name:find("Key") or v.Name:find("FuseObtain")) and v:FindFirstChild("Hitbox")) or (v.Name == "LeverForGate" and v.PrimaryPart) then
+    if not table.find(_G.KeyAdd, v) and (v.Name:find("Key") or v.Name:find("FuseObtain") or v.Name == "LeverForGate") then
         table.insert(_G.KeyAdd, v)
     end
 end
@@ -815,7 +814,7 @@ end
 if v:FindFirstChild("Esp_Gui") and v["Esp_Gui"]:FindFirstChild("TextLabel") then
 	v["Esp_Gui"]:FindFirstChild("TextLabel").Text = 
 	        (_G.EspName == true and "Door "..((v.Door:FindFirstChild("Sign") and v.Door.Sign:FindFirstChild("Stinker") and v.Door.Sign.Stinker.Text) or (v.Door.Sign:FindFirstChild("SignText") and v.Door.Sign.SignText.Text)):gsub("^0+", "")..(v.Door:FindFirstChild("Lock") and " (lock)" or "") or "")..
-            (_G.EspDistance == true and "\nDistance ("..string.format("%.0f", Distance(v.Door.Door.Position)).."m)" or "")
+            (_G.EspDistance == true and "\nDistance ("..string.format("%.0f", Distance(v.Door:GetPivot().Position)).."m)" or "")
     v["Esp_Gui"]:FindFirstChild("TextLabel").TextSize = _G.EspGuiTextSize or 15
     v["Esp_Gui"]:FindFirstChild("TextLabel").TextColor3 = _G.EspGuiTextColor or Color3.new(255, 255, 255)
 end
@@ -875,7 +874,7 @@ end
 end
 else
 function LeverTimes(v)
-if v.Name:find("TimerLever") and v.PrimaryPart then
+if v.Name:find("TimerLever") then
 if v:FindFirstChild("Esp_Highlight") then
 	v:FindFirstChild("Esp_Highlight").FillColor = _G.ColorLight or Color3.fromRGB(255, 255, 255)
 	v:FindFirstChild("Esp_Highlight").OutlineColor = _G.ColorLight or Color3.fromRGB(255, 255, 255)
@@ -895,7 +894,7 @@ end
 if v:FindFirstChild("Esp_Gui") and v["Esp_Gui"]:FindFirstChild("TextLabel") then
 	v["Esp_Gui"]:FindFirstChild("TextLabel").Text = 
 	        (_G.EspName == true and "Lever Time" or "")..
-            (_G.EspDistance == true and "\nDistance ("..string.format("%.0f", Distance(v.PrimaryPart.Position)).."m)" or "")
+            (_G.EspDistance == true and "\nDistance ("..string.format("%.0f", Distance(v:GetPivot().Position)).."m)" or "")
     v["Esp_Gui"]:FindFirstChild("TextLabel").TextSize = _G.EspGuiTextSize or 15
     v["Esp_Gui"]:FindFirstChild("TextLabel").TextColor3 = _G.EspGuiTextColor or Color3.new(255, 255, 255)
 end
@@ -923,7 +922,7 @@ end
 end
 end
 local function CheckTimeLever(v)
-    if not table.find(_G.TimeLeverAdd, v) and v.Name == "TimerLever" then
+    if not table.find(_G.TimeLeverAdd, v) and v.Name:find("TimerLever") then
         table.insert(_G.TimeLeverAdd, v)
     end
 end
@@ -982,7 +981,7 @@ end
 end
 else
 function Books(v)
-if v.Name:find("LiveHintBook") and v.PrimaryPart then
+if v.Name:find("LiveHintBook") then
 if v:FindFirstChild("Esp_Highlight") then
 	v:FindFirstChild("Esp_Highlight").FillColor = _G.ColorLight or Color3.fromRGB(255, 255, 255)
 	v:FindFirstChild("Esp_Highlight").OutlineColor = _G.ColorLight or Color3.fromRGB(255, 255, 255)
@@ -1002,7 +1001,7 @@ end
 if v:FindFirstChild("Esp_Gui") and v["Esp_Gui"]:FindFirstChild("TextLabel") then
 	v["Esp_Gui"]:FindFirstChild("TextLabel").Text = 
 	        (_G.EspName == true and "Book" or "")..
-            (_G.EspDistance == true and "\nDistance ("..string.format("%.0f", Distance(v.PrimaryPart.Position)).."m)" or "")
+            (_G.EspDistance == true and "\nDistance ("..string.format("%.0f", Distance(v:GetPivot().Position)).."m)" or "")
     v["Esp_Gui"]:FindFirstChild("TextLabel").TextSize = _G.EspGuiTextSize or 15
     v["Esp_Gui"]:FindFirstChild("TextLabel").TextColor3 = _G.EspGuiTextColor or Color3.new(255, 255, 255)
 end
@@ -1107,7 +1106,7 @@ end
 if v:FindFirstChild("Esp_Gui") and v["Esp_Gui"]:FindFirstChild("TextLabel") then
 	v["Esp_Gui"]:FindFirstChild("TextLabel").Text = 
 	        (_G.EspName == true and "Breaker" or "")..
-            (_G.EspDistance == true and "\nDistance ("..string.format("%.0f", Distance(v.PrimaryPart.Position)).."m)" or "")
+            (_G.EspDistance == true and "\nDistance ("..string.format("%.0f", Distance(v:GetPivot().Position)).."m)" or "")
     v["Esp_Gui"]:FindFirstChild("TextLabel").TextSize = _G.EspGuiTextSize or 15
     v["Esp_Gui"]:FindFirstChild("TextLabel").TextColor3 = _G.EspGuiTextColor or Color3.new(255, 255, 255)
 end
@@ -1213,7 +1212,7 @@ end
 if v:FindFirstChild("Esp_Gui") and v["Esp_Gui"]:FindFirstChild("TextLabel") then
 	v["Esp_Gui"]:FindFirstChild("TextLabel").Text = 
 	        (_G.EspName == true and v.Parent.Name or "")..
-            (_G.EspDistance == true and "\nDistance ("..string.format("%.0f", Distance(v.Position)).."m)" or "")
+            (_G.EspDistance == true and "\nDistance ("..string.format("%.0f", Distance(v:GetPivot().Position)).."m)" or "")
     v["Esp_Gui"]:FindFirstChild("TextLabel").TextSize = _G.EspGuiTextSize or 15
     v["Esp_Gui"]:FindFirstChild("TextLabel").TextColor3 = _G.EspGuiTextColor or Color3.new(255, 255, 255)
 end
@@ -1375,7 +1374,7 @@ end
 if v:FindFirstChild("Esp_Gui") and v["Esp_Gui"]:FindFirstChild("TextLabel") then
 	v["Esp_Gui"]:FindFirstChild("TextLabel").Text = 
 	        (_G.EspName == true and _G.EspEntityNameDis[v.Name] or "")..
-            (_G.EspDistance == true and "\nDistance ("..string.format("%.0f", Distance(v.PrimaryPart.Position)).."m)" or "")
+            (_G.EspDistance == true and "\nDistance ("..string.format("%.0f", Distance(v:GetPivot().Position)).."m)" or "")
     v["Esp_Gui"]:FindFirstChild("TextLabel").TextSize = _G.EspGuiTextSize or 15
     v["Esp_Gui"]:FindFirstChild("TextLabel").TextColor3 = _G.EspGuiTextColor or Color3.new(255, 255, 255)
 end
@@ -1435,7 +1434,7 @@ end
 end
 else
 function Hidings(v)
-if (v.Name == "Bed" or v.Name == "Wardrobe" or v.Name == "Backdoor_Wardrobe" or v.Name == "Locker_Large" or v.Name == "Rooms_Locker") and v.PrimaryPart then
+if (v.Name == "Bed" or v.Name == "Wardrobe" or v.Name == "Backdoor_Wardrobe" or v.Name == "Locker_Large" or v.Name == "Rooms_Locker") then
 if v:FindFirstChild("Esp_Highlight") then
 	v:FindFirstChild("Esp_Highlight").FillColor = _G.ColorLight or Color3.fromRGB(255, 255, 255)
 	v:FindFirstChild("Esp_Highlight").OutlineColor = _G.ColorLight or Color3.fromRGB(255, 255, 255)
@@ -1455,7 +1454,7 @@ end
 if v:FindFirstChild("Esp_Gui") and v["Esp_Gui"]:FindFirstChild("TextLabel") then
 	v["Esp_Gui"]:FindFirstChild("TextLabel").Text = 
 	        (_G.EspName == true and v.Name or "")..
-            (_G.EspDistance == true and "\nDistance ("..string.format("%.0f", Distance(v.PrimaryPart.Position)).."m)" or "")
+            (_G.EspDistance == true and "\nDistance ("..string.format("%.0f", Distance(v:GetPivot().Position)).."m)" or "")
     v["Esp_Gui"]:FindFirstChild("TextLabel").TextSize = _G.EspGuiTextSize or 15
     v["Esp_Gui"]:FindFirstChild("TextLabel").TextColor3 = _G.EspGuiTextColor or Color3.new(255, 255, 255)
 end
@@ -1483,17 +1482,17 @@ end
 end
 end
 local function CheckHiding(v)
-    if not table.find(_G.HidingAdd, v) and v.Name == "Bed" or v.Name == "Wardrobe" or v.Name == "Backdoor_Wardrobe" or v.Name == "Locker_Large" or v.Name == "Rooms_Locker" then
+    if not table.find(_G.HidingAdd, v) and (v.Name == "Bed" or v.Name == "Wardrobe" or v.Name == "Backdoor_Wardrobe" or v.Name == "Locker_Large" or v.Name == "Rooms_Locker") then
         table.insert(_G.HidingAdd, v)
     end
 end
 for _, v in ipairs(workspace:GetDescendants()) do
 	CheckHiding(v)
 end
-BookSpawn = workspace.DescendantAdded:Connect(function(v)
+HidingSpawn = workspace.DescendantAdded:Connect(function(v)
     CheckHiding(v)
 end)
-BookRemove = workspace.DescendantRemoving:Connect(function(v)
+HidingRemove = workspace.DescendantRemoving:Connect(function(v)
     for i = #_G.HidingAdd, 1, -1 do
         if _G.HidingAdd[i] == v then
             table.remove(_G.HidingAdd, i)
@@ -1670,7 +1669,6 @@ _G.EspHealth = Value
     end
 })
 
--- [FIXED] Updated to use executor HTTP requests and put the process in task.spawn to stop UI halting
 -----------------------------------
 Info = Tabs["Info"]
 local InviteCode = "CraqPh932n"
