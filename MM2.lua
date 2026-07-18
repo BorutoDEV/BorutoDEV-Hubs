@@ -921,7 +921,7 @@ Tips:
 	
 	cameraConnection = RunService.RenderStepped:Connect(Update);
 	table.insert(ActiveConnections.RenderStepped, cameraConnection);
-	
+
 	-- ==========================================
 	-- SILENT AIMBOT
 	-- ==========================================
@@ -938,19 +938,21 @@ Tips:
 	FOVCircle.Color = Color3.fromRGB(255, 255, 255)
 	FOVCircle.Filled = false
 	
-	-- Get Closest Player to Mouse
-	local function GetClosestPlayerToMouse()
+	-- Get Closest Murderer to Mouse (Only targets the Murderer)
+	local function GetClosestTargetToMouse()
 		local closestPlayer = nil
 		local shortestDistance = SilentAimbot.FOV
 		
 		for _, player in pairs(Players:GetPlayers()) do
-			if player ~= LocalPlayer and player.Character then
+			-- Check if the player is the active Murderer
+			if player ~= LocalPlayer and player.Character and player.Name == Murder then
 				local targetPart = player.Character:FindFirstChild(SilentAimbot.TargetPart)
 				if targetPart then
 					local pos, onScreen = CurrentCamera:WorldToViewportPoint(targetPart.Position)
 					if onScreen then
 						local distance = (Vector2.new(pos.X, pos.Y) - UserInputService:GetMouseLocation()).Magnitude
-						if distance < shortestDistance then
+						-- Detect if they are inside the adjustable FOV circle
+						if distance <= SilentAimbot.FOV then
 							if IsAlive(player) then
 								if SilentAimbot.WallCheck then
 									local ray = Ray.new(CurrentCamera.CFrame.Position, (targetPart.Position - CurrentCamera.CFrame.Position).Unit * 1000)
@@ -973,8 +975,11 @@ Tips:
 		return closestPlayer
 	end
 	
+	local lastAutoShoot = 0
+	local autoShootCooldown = 1.2 -- Prevents remote event spamming/crashing
+	
 	Tabs.AimbotTab:Toggle({
-		Title = "Enable Silent Aimbot",
+		Title = "Enable Silent Auto-Shoot",
 		Default = false,
 		Callback = function(state)
 			SilentAimbot.Enabled = state
@@ -983,7 +988,7 @@ Tips:
 			if state then
 				WindUI:Notify({
 					Title = "Silent Aimbot",
-					Content = "Enabled! Hold Right Click to aim",
+					Content = "Enabled! Murderers in the FOV get shot automatically.",
 					Icon = "check-circle",
 					Duration = 3
 				})
@@ -994,21 +999,26 @@ Tips:
 					FOVCircle.Color = SilentAimbot.CircleColor
 					FOVCircle.Visible = SilentAimbot.CircleVisible and SilentAimbot.Enabled
 					
-					if SilentAimbot.Enabled and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
-						local target = GetClosestPlayerToMouse()
+					-- No activation key required; runs autonomously when toggled ON
+					if SilentAimbot.Enabled then
+						local target = GetClosestTargetToMouse()
 						if target and target.Character then
 							local targetPart = target.Character:FindFirstChild(SilentAimbot.TargetPart)
 							if targetPart then
 								local targetVelocity = target.Character:FindFirstChild("HumanoidRootPart") and target.Character.HumanoidRootPart.Velocity or Vector3.new(0, 0, 0)
 								local predictedPosition = targetPart.Position + (targetVelocity * SilentAimbot.Prediction)
 								
-								CurrentCamera.CFrame = CFrame.new(CurrentCamera.CFrame.Position, predictedPosition)
+								-- Camera is NOT snapped here, making it a true silent aimbot.
 								
 								local gun = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Gun")
 								if gun and gun:FindFirstChild("KnifeLocal") then
-									pcall(function()
-										gun.KnifeLocal.CreateBeam.RemoteFunction:InvokeServer(1, predictedPosition, "AH2")
-									end)
+									-- Cooldown check so we don't spam the server remote 60 times a second
+									if tick() - lastAutoShoot >= autoShootCooldown then
+										pcall(function()
+											gun.KnifeLocal.CreateBeam.RemoteFunction:InvokeServer(1, predictedPosition, "AH2")
+											lastAutoShoot = tick()
+										end)
+									end
 								end
 							end
 						end
@@ -1088,17 +1098,17 @@ Tips:
 	
 	Tabs.AimbotTab:Code({
 		Title = "How to use:",
-		Code = [[Silent Aimbot Instructions:
-1. Enable Silent Aimbot
-2. Hold RIGHT MOUSE BUTTON (Right Click)
-3. The script will automatically aim at the nearest player in the FOV circle
-4. Release to shoot normally
+		Code = [[Silent Auto-Shoot Instructions:
+1. Enable Silent Auto-Shoot.
+2. Hold your Gun out.
+3. Keep the FOV circle near doorways or paths.
+4. If the Murderer enters your circle, the script shoots them automatically!
 
 Tips:
-• Use FOV Circle to see targeting area
-• Adjust Prediction based on ping
-• Wall Check prevents shooting through walls
-• Target Part: Head = Most damage]]
+• The camera will not snap (True Silent Aim).
+• Adjust FOV to make the detection circle wider or smaller.
+• Prediction adjusts automatically to the target.
+• Target Part: Head = Best chance of bypassing hit-reg delays.]]
 	});
 	
 	-- ==========================================
