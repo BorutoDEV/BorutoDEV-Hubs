@@ -16,11 +16,11 @@ do
 	-- ==========================================
 	local ActiveConnections = {
 		RenderStepped = {},
-		Stepped = nil,
-		Heartbeat = nil,
-		PlayerRemoving = nil,
+		Stepped = {},
+		Heartbeat = {},
+		PlayerRemoving = {},
 		ChildAdded = {},
-		OnTeleport = nil
+		OnTeleport = {}
 	}
 	local ScriptEnabled = true
 	local GUIVisible = true
@@ -189,7 +189,7 @@ do
 	});
 	
 	Tabs.MainTab:Paragraph({
-		Title = "MM2 Script v1.0",
+		Title = "MM2 Script v2.0 FIXED",
 		Desc = "Welcome to BorutoDEV's Murder Mystery 2 Script!\n\nPress Ctrl+M to toggle the script on/off.\nAll features are organized by role tabs.",
 		Image = "rbxassetid://72462144048455",
 		ImageSize = 48
@@ -302,6 +302,7 @@ Tips:
 	
 	local function updateCharacter()
 		local character = LocalPlayer.Character;
+		if not character then return end
 		local humanoid = character:FindFirstChildOfClass("Humanoid");
 		if humanoid then
 			if not CharacterSettings.WalkSpeed.Locked then
@@ -703,9 +704,15 @@ Tips:
 	end);
 	table.insert(ActiveConnections.ChildAdded, workspaceChildConn);
 	
-	local espRenderConn = RunService.RenderStepped:Connect(function()
-		UpdateRoles();
-		UpdateHighlights();
+	local roleUpdateAccumulator = 0
+	local espRenderConn = RunService.RenderStepped:Connect(function(dt)
+		if not ScriptEnabled then return end
+		roleUpdateAccumulator += dt
+		if roleUpdateAccumulator >= 0.5 then
+			roleUpdateAccumulator = 0
+			UpdateRoles()
+		end
+		UpdateHighlights()
 	end);
 	table.insert(ActiveConnections.RenderStepped, espRenderConn);
 	
@@ -720,7 +727,7 @@ Tips:
 			ESPDrawings[player] = nil
 		end
 	end);
-	ActiveConnections.PlayerRemoving = playerRemoveConn;
+	table.insert(ActiveConnections.PlayerRemoving, playerRemoveConn);
 	
 	-- ==========================================
 	-- TELEPORT TAB
@@ -2360,9 +2367,15 @@ Tips:
 	});
 	
 	Tabs.ChangelogsTab:Code({
-		Title = "v1.1 - Current Release",
+		Title = "v2.0 - Fixed Update",
 		Code = [[
 Features:
+• Fixed connection tracking and cleanup
+• Fixed master Ctrl+M toggle state
+• Added Murderer Evasion System
+• Added Predictive Gun Dodging
+• Added advanced local protection tools
+• Improved nil-safety and role-update throttling
 • Full ESP (Murderer, Sheriff, Innocent, GunDrop)
 • Drawing ESP (Name, Box, Tracers)
 • Silent Aimbot (Hold Right Click)
@@ -2585,85 +2598,181 @@ Features:
 	});
 	
 	-- ==========================================
-	-- CTRL + M TOGGLE SYSTEM
+	-- MASTER TOGGLE / CLEANUP
 	-- ==========================================
-	local function DisconnectAll()
-		for _, conn in ipairs(ActiveConnections.RenderStepped) do
-			if conn then
-				pcall(function()
-					conn:Disconnect()
-				end)
+	local function SetSystemsEnabled(enabled)
+		ScriptEnabled = enabled
+		if not enabled then
+			if SilentAimbot.Connection then
+				SilentAimbot.Connection:Disconnect()
+				SilentAimbot.Connection = nil
 			end
+			FOVCircle.Visible = false
+			killActive = false
+			AutoFarm.Enabled = false
+			AutoFarm.EggEnabled = false
+			if AutoFarm.Connection then pcall(task.cancel, AutoFarm.Connection); AutoFarm.Connection = nil end
+			if AutoFarm.EggConnection then pcall(task.cancel, AutoFarm.EggConnection); AutoFarm.EggConnection = nil end
+			RemoveShotButton()
+			RemoveAllHighlights()
+		else
+			WindUI:Notify({Title="Script Toggled", Content="Systems active.", Icon="check-circle", Duration=3, Color="Green"})
 		end
-		ActiveConnections.RenderStepped = {}
-		
-		if ActiveConnections.PlayerRemoving then
-			pcall(function()
-				ActiveConnections.PlayerRemoving:Disconnect()
-			end)
-		end
-		
-		for _, conn in ipairs(ActiveConnections.ChildAdded) do
-			if conn then
-				pcall(function()
-					conn:Disconnect()
-				end)
-			end
-		end
-		ActiveConnections.ChildAdded = {}
-		
-		killActive = false;
-		AutoFarm.Enabled = false;
-		AutoFarm.EggEnabled = false;
-		if AutoFarm.Connection then
-			pcall(function()
-				task.cancel(AutoFarm.Connection)
-			end)
-		end
-		if AutoFarm.EggConnection then
-			pcall(function()
-				task.cancel(AutoFarm.EggConnection)
-			end)
-		end
-		
-		if Settings.Noclip.Connection then
-			Settings.Noclip.Connection:Disconnect();
-		end
-		if Settings.AntiAFK.Connection then
-			Settings.AntiAFK.Connection:Disconnect();
-		end
-		
-		Settings.Hitbox.Enabled = false;
-		for _, box in pairs(Settings.Hitbox.Adornments) do
-			if box then
-				box:Destroy()
-			end
-		end
-		
-		if SilentAimbot.Connection then
-			SilentAimbot.Connection:Disconnect();
-			SilentAimbot.Connection = nil
-		end
-		FOVCircle.Visible = false
-		
-		if shotButtonActive then
-			RemoveShotButton();
-		end
-		RemoveAllHighlights();
 	end
-	
 
-	WindUI:Notify({
-		Title = "Script Toggled",
-		Content = "M to restore",
-		Duration = 3,
-		Icon = "power-off",
-		Color = "Red"
-		});
-		print("[MM2] Script Toggled - Press M to open and close");
+	getgenv().ToggleMM2Script = function()
+		SetSystemsEnabled(not ScriptEnabled)
+		if not ScriptEnabled then
+			WindUI:Notify({Title="Script Toggled", Content="Systems paused. Press Ctrl+M to restore.", Icon="power-off", Duration=3, Color="Red"})
+		end
 	end
-	
-	
+
+	-- ==========================================
+	-- EXTRA SYSTEMS FROM v2 REQUEST
+	-- ==========================================
+	local EvasionSystem = {Enabled=false, TriggerDistance=35, Connection=nil}
+	local MurdSystem = {PredictiveDodge=false, DodgeConnection=nil}
+
+	Tabs.InnocentTab:Section({
+		Title = gradient("Murderer Evasion", Color3.fromHex("#00ff40"), Color3.fromHex("#008f11"))
+	});
+
+	Tabs.InnocentTab:Toggle({
+		Title = "Murderer Evasion System",
+		Default = false,
+		Callback = function(state)
+			EvasionSystem.Enabled = state
+			if EvasionSystem.Connection then EvasionSystem.Connection:Disconnect(); EvasionSystem.Connection=nil end
+			if state then
+				EvasionSystem.Connection = RunService.Heartbeat:Connect(function()
+					if not ScriptEnabled or not EvasionSystem.Enabled then return end
+					local char = LocalPlayer.Character
+					local root = char and char:FindFirstChild("HumanoidRootPart")
+					local hum = char and char:FindFirstChildOfClass("Humanoid")
+					local murderer = Murder and Players:FindFirstChild(Murder)
+					local mroot = murderer and murderer.Character and murderer.Character:FindFirstChild("HumanoidRootPart")
+					if root and hum and mroot and (root.Position-mroot.Position).Magnitude <= EvasionSystem.TriggerDistance then
+						local dir = root.Position-mroot.Position
+						if dir.Magnitude > 0 then
+							hum:MoveTo(root.Position + dir.Unit*40)
+						end
+					end
+				end)
+				table.insert(ActiveConnections.Heartbeat, EvasionSystem.Connection)
+			end
+		end
+	});
+
+	Tabs.InnocentTab:Slider({
+		Title = "Evasion Radius",
+		Value = {Min=15, Max=100, Default=35},
+		Callback = function(v) EvasionSystem.TriggerDistance=v end
+	});
+
+	Tabs.MurderTab:Section({
+		Title = gradient("Predictive Dodge", Color3.fromHex("#ff0000"), Color3.fromHex("#800000"))
+	});
+
+	Tabs.MurderTab:Toggle({
+		Title = "Predictive Gun Dodging",
+		Default = false,
+		Callback = function(state)
+			MurdSystem.PredictiveDodge = state
+			if MurdSystem.DodgeConnection then MurdSystem.DodgeConnection:Disconnect(); MurdSystem.DodgeConnection=nil end
+			if state then
+				MurdSystem.DodgeConnection = RunService.Heartbeat:Connect(function()
+					if not ScriptEnabled or not MurdSystem.PredictiveDodge or LocalPlayer.Name ~= Murder then return end
+					local char = LocalPlayer.Character
+					local root = char and char:FindFirstChild("HumanoidRootPart")
+					local sheriff = Sheriff and Players:FindFirstChild(Sheriff)
+					local shead = sheriff and sheriff.Character and sheriff.Character:FindFirstChild("Head")
+					local sgun = sheriff and sheriff.Character and sheriff.Character:FindFirstChild("Gun")
+					if root and shead and sgun then
+						local delta = root.Position-shead.Position
+						if delta.Magnitude > 0 and shead.CFrame.LookVector:Dot(delta.Unit) > 0.85 then
+							local hum = char:FindFirstChildOfClass("Humanoid")
+							if hum then
+								hum:MoveTo(root.Position + shead.CFrame.RightVector*(math.random(0,1)==0 and -18 or 18))
+								hum.Jump = true
+							end
+						end
+					end
+				end)
+				table.insert(ActiveConnections.Heartbeat, MurdSystem.DodgeConnection)
+			end
+		end
+	});
+
+	Tabs.ExploitsTab:Section({
+		Title = gradient("Advanced", Color3.fromHex("#ff0000"), Color3.fromHex("#800000"))
+	});
+
+	local ExploitSystem = {GodModeEnabled=false, GodModeConnection=nil, FlingActive=false}
+
+	Tabs.ExploitsTab:Toggle({
+		Title = "Godmode (Local)",
+		Default = false,
+		Callback = function(state)
+			ExploitSystem.GodModeEnabled=state
+			if ExploitSystem.GodModeConnection then ExploitSystem.GodModeConnection:Disconnect(); ExploitSystem.GodModeConnection=nil end
+			if state then
+				ExploitSystem.GodModeConnection=RunService.Heartbeat:Connect(function()
+					if not ScriptEnabled then return end
+					local hum=LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+					if hum then
+						hum.MaxHealth=math.huge
+						hum.Health=math.huge
+					end
+				end)
+				table.insert(ActiveConnections.Heartbeat, ExploitSystem.GodModeConnection)
+			end
+		end
+	});
+
+	local FlingTarget = "Murderer"
+	Tabs.ExploitsTab:Dropdown({
+		Title="Fling Target",
+		Values={"Murderer","Sheriff"},
+		Value="Murderer",
+		Callback=function(v) FlingTarget=v end
+	});
+
+	Tabs.ExploitsTab:Button({
+		Title="Execute Fling",
+		Callback=function()
+			local char=LocalPlayer.Character
+			local root=char and char:FindFirstChild("HumanoidRootPart")
+			local targetName=(FlingTarget=="Murderer" and Murder) or Sheriff
+			local target=targetName and Players:FindFirstChild(targetName)
+			local targetRoot=target and target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+			if not root or not targetRoot then
+				WindUI:Notify({Title="Fling",Content="Target not found!",Icon="x-circle",Duration=3})
+				return
+			end
+			local oldCFrame=root.CFrame
+			local start=tick()
+			if FlingSystem then FlingSystem=nil end
+			local connection
+			connection=RunService.Heartbeat:Connect(function()
+				if not ScriptEnabled or not targetRoot.Parent or tick()-start>2 then
+					connection:Disconnect()
+					if root.Parent then root.CFrame=oldCFrame end
+					return
+				end
+				root.CFrame=targetRoot.CFrame*CFrame.new(0,0.5,0)
+				root.AssemblyAngularVelocity=Vector3.new(0,200,0)
+			end)
+			table.insert(ActiveConnections.Heartbeat, connection)
+		end
+	});
+
+	-- Ensure all high-frequency callbacks respect the master switch.
+	local previousUpdateRoles = UpdateRoles
+	UpdateRoles = function(...)
+		if not ScriptEnabled then return end
+		return previousUpdateRoles(...)
+	end
+
 	-- Ctrl + M Detection
 	UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		if gameProcessed then
